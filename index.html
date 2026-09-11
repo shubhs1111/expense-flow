@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expense Flow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Loading screen -->
+  <div id="loadingScreen" class="loading-screen">
+    <div class="loading-spinner"></div>
+    <p>Loading Expense Flow...</p>
+  </div>
+
+  <!-- Auth screen -->
+  <div id="authScreen" class="auth-screen is-hidden">
+    <div class="auth-card">
+      <h1 class="auth-title">Expense Flow</h1>
+      <p class="auth-subtitle">Track daily spending without losing sight of your bigger money picture.</p>
+
+      <div class="auth-tabs">
+        <button class="auth-tab is-active" data-auth-tab="login" type="button">Log in</button>
+        <button class="auth-tab" data-auth-tab="signup" type="button">Sign up</button>
+      </div>
+
+      <form id="loginForm" class="auth-form" data-auth-panel="login">
+        <label>
+          Email
+          <input id="loginEmail" type="email" placeholder="you@example.com" required>
+        </label>
+        <label>
+          Password
+          <input id="loginPassword" type="password" placeholder="Your password" required>
+        </label>
+        <div id="loginError" class="auth-error is-hidden"></div>
+        <button type="submit" class="primary-button auth-submit">Log in</button>
+      </form>
+
+      <form id="signupForm" class="auth-form is-hidden" data-auth-panel="signup">
+        <label>
+          Name
+          <input id="signupName" type="text" placeholder="Your name" required>
+        </label>
+        <label>
+          Email
+          <input id="signupEmail" type="email" placeholder="you@example.com" required>
+        </label>
+        <label>
+          Password
+          <input id="signupPassword" type="password" placeholder="Min 6 characters" minlength="6" required>
+        </label>
+        <div id="signupError" class="auth-error is-hidden"></div>
+        <button type="submit" class="primary-button auth-submit">Create account</button>
+      </form>
+
+      <div class="auth-divider"><span>or</span></div>
+      <button id="googleSignInButton" type="button" class="google-signin-button">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Continue with Google
+      </button>
+    </div>
+  </div>
+
+  <div class="page-shell is-hidden" id="appShell">
+    <header class="hero">
+      <div>
+        <div class="hero-top-bar">
+          <p class="eyebrow">Personal finance dashboard</p>
+          <div class="user-bar">
+            <span id="userDisplayName" class="user-name"></span>
+            <button id="logoutButton" type="button" class="secondary-button logout-button">Log out</button>
+          </div>
+        </div>
+        <h1>Track daily spending without losing sight of your bigger money picture.</h1>
+        <p class="hero-copy">
+          Log each spend, watch your daily, weekly, and monthly patterns, and keep an eye on balances across your current account, savings, and investments.
+        </p>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span>Total Spent This Month</span>
+          <strong id="monthSpendHero">Rs 0</strong>
+        </div>
+        <div class="hero-stat">
+          <span>Available Across Wallets</span>
+          <strong id="netWorthHero">Rs 0</strong>
+        </div>
+      </div>
+    </header>
+
+    <nav class="app-tabs" aria-label="Expense Flow sections">
+      <button class="app-tab is-active" data-page="home" type="button">
+        <span class="app-tab-label">Home</span>
+        <small>Capture and balances</small>
+      </button>
+      <button class="app-tab" data-page="insights" type="button">
+        <span class="app-tab-label">Insights</span>
+        <small>Trends and comparisons</small>
+      </button>
+      <button class="app-tab" data-page="history" type="button">
+        <span class="app-tab-label">History</span>
+        <small>Every saved transaction</small>
+      </button>
+    </nav>
+
+    <main class="dashboard">
+      <section class="panel panel-form" data-page="home">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Capture activity</p>
+            <h2>Add a transaction</h2>
+            <p id="formModeCopy" class="helper-copy">Create a new expense, income, or transfer entry.</p>
+          </div>
+        </div>
+
+        <div class="voice-input-section">
+          <button id="voiceButton" type="button" class="voice-button" aria-label="Voice input">
+            <span class="voice-icon">🎙️</span>
+            <span class="voice-label">Tap to speak</span>
+          </button>
+          <div id="voiceStatus" class="voice-status is-hidden">
+            <div class="voice-pulse"></div>
+            <span id="voiceStatusText">Listening...</span>
+          </div>
+          <div id="voiceTranscript" class="voice-transcript is-hidden"></div>
+          <p class="voice-hint">Say: "type expense title groceries amount 500 category food account current date today"<br>Or just: "expense groceries 500 food current account today"</p>
+        </div>
+
+        <form id="transactionForm" class="transaction-form">
+          <label>
+            Type
+            <select id="entryType" name="type">
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+              <option value="transfer">Transfer</option>
+            </select>
+          </label>
+
+          <label>
+            Title
+            <input id="entryTitle" name="title" type="text" placeholder="Groceries, cab, salary..." required>
+          </label>
+
+          <label>
+            Amount
+            <input id="entryAmount" name="amount" type="number" min="0" step="0.01" placeholder="0.00" required>
+          </label>
+
+          <label id="categoryField">
+            Category
+            <select id="entryCategory" name="category"></select>
+          </label>
+
+          <label id="accountField">
+            Account
+            <select id="entryAccount" name="account"></select>
+          </label>
+
+          <label id="fromAccountField" class="is-hidden">
+            From account
+            <select id="entryFromAccount" name="fromAccount"></select>
+          </label>
+
+          <label id="toAccountField" class="is-hidden">
+            To account
+            <select id="entryToAccount" name="toAccount"></select>
+          </label>
+
+          <label>
+            Date
+            <input id="entryDate" name="date" type="date" required>
+          </label>
+
+          <label class="form-notes">
+            Notes
+            <textarea id="entryNotes" name="notes" rows="3" placeholder="Optional details"></textarea>
+          </label>
+
+          <div class="action-row">
+            <button id="submitButton" type="submit" class="primary-button">Save Transaction</button>
+            <button id="cancelEditButton" type="button" class="secondary-button is-hidden">Cancel Edit</button>
+          </div>
+        </form>
+
+      </section>
+
+      <section class="panel panel-wallets" data-page="home">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Wallet overview</p>
+            <h2>Balances by account</h2>
+          </div>
+        </div>
+        <div id="walletCards" class="wallet-grid"></div>
+        <form id="balanceForm" class="balance-form">
+          <label>
+            Current account
+            <input id="balanceCurrent" type="number" min="0" step="0.01">
+          </label>
+          <label>
+            Savings account
+            <input id="balanceSavings" type="number" min="0" step="0.01">
+          </label>
+          <label>
+            Investments
+            <input id="balanceInvestments" type="number" min="0" step="0.01">
+          </label>
+          <label>
+            Credit card due
+            <input id="balanceCreditCard" type="number" min="0" step="0.01">
+          </label>
+          <button type="submit" class="secondary-button">Update Opening Balances</button>
+        </form>
+        <form id="creditCardBillForm" class="bill-form">
+          <label>
+            Credit card bill generated on
+            <input id="creditCardStatementDate" type="date">
+          </label>
+          <button type="submit" class="secondary-button">Update Bill Cycle</button>
+        </form>
+        <div class="action-row">
+          <button id="startMonthButton" type="button" class="secondary-button">Start Fresh Month</button>
+          <button id="restoreBackupButton" type="button" class="secondary-button">Restore Last Backup</button>
+          <button id="resetAllButton" type="button" class="danger-button">Reset All Data</button>
+        </div>
+        <div class="data-actions">
+          <button id="exportDataButton" type="button" class="secondary-button">Export Data (JSON)</button>
+          <button id="importDataButton" type="button" class="secondary-button">Import Data</button>
+        </div>
+        <p id="backupStatus" class="helper-copy">Restore points are created before clear or delete actions.</p>
+        <p class="helper-copy">
+          Monthly workflow: update your opening balances on the 1st, then use Start Fresh Month to clear last month's transactions and begin a clean cycle.
+        </p>
+      </section>
+
+      <!-- Quick stats -->
+      <section class="panel panel-quick-stats" data-page="insights">
+        <div class="quick-stats-row">
+          <article class="quick-stat">
+            <span>Today</span>
+            <strong id="todaySpend">Rs 0</strong>
+            <small id="todayChange" class="delta-badge">-</small>
+          </article>
+          <article class="quick-stat">
+            <span>This Week</span>
+            <strong id="weekSpend">Rs 0</strong>
+            <small id="weekChange" class="delta-badge">-</small>
+          </article>
+          <article class="quick-stat">
+            <span>This Month</span>
+            <strong id="monthSpend">Rs 0</strong>
+            <small id="monthChange" class="delta-badge">-</small>
+          </article>
+          <article class="quick-stat">
+            <span>Daily Average</span>
+            <strong id="insightAverageDaily">Rs 0</strong>
+            <small>this month so far</small>
+          </article>
+        </div>
+      </section>
+
+      <!-- Spending trend -->
+      <section class="panel panel-trend" data-page="insights">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Spending trend</p>
+            <h2>Daily / Weekly / Monthly</h2>
+          </div>
+          <div class="chart-tabs">
+            <button class="tab-button is-active" data-range="daily">Daily</button>
+            <button class="tab-button" data-range="weekly">Weekly</button>
+            <button class="tab-button" data-range="monthly">Monthly</button>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div id="chartScroll" class="chart-scroll">
+            <canvas id="trendChart" width="900" height="320" aria-label="Spending trend chart"></canvas>
+          </div>
+          <div id="chartTooltip" class="chart-tooltip is-hidden"></div>
+        </div>
+      </section>
+
+      <!-- Category breakdown -->
+      <section class="panel panel-category-breakdown" data-page="insights">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Where your money goes</p>
+            <h2>Category breakdown</h2>
+          </div>
+          <div class="breakdown-period-tabs">
+            <button class="breakdown-tab is-active" data-breakdown="month">This Month</button>
+            <button class="breakdown-tab" data-breakdown="week">This Week</button>
+          </div>
+        </div>
+        <div id="categoryBreakdownTotal" class="breakdown-total"></div>
+        <div id="categoryBreakdown" class="category-breakdown-list"></div>
+      </section>
+
+      <!-- Week over week -->
+      <section class="panel panel-wow" data-page="insights">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Week over week</p>
+            <h2>This week vs last week</h2>
+          </div>
+        </div>
+        <div id="wowSummary" class="wow-summary"></div>
+        <div id="wowTable" class="comparison-table"></div>
+      </section>
+
+      <!-- Month over month -->
+      <section class="panel panel-mom" data-page="insights">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Month over month</p>
+            <h2>This month vs last month</h2>
+          </div>
+        </div>
+        <div id="momSummary" class="wow-summary"></div>
+        <div id="momTable" class="comparison-table"></div>
+      </section>
+
+      <!-- Top expenses -->
+      <section class="panel panel-top-expenses" data-page="insights">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Biggest spends</p>
+            <h2>Top expenses this month</h2>
+          </div>
+        </div>
+        <div id="topExpensesList" class="top-expenses-list"></div>
+      </section>
+
+      <section id="transactionHistory" class="panel panel-history" data-page="history">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Archive</p>
+            <h2>Transaction history</h2>
+            <p id="historyCount" class="helper-copy">All saved transactions appear here.</p>
+          </div>
+        </div>
+        <div class="search-bar">
+          <input id="historySearch" type="text" placeholder="Search transactions..." aria-label="Search transactions">
+          <select id="historyFilterCategory" aria-label="Filter by category">
+            <option value="">All categories</option>
+          </select>
+          <select id="historyFilterType" aria-label="Filter by type">
+            <option value="">All types</option>
+            <option value="expense">Expense</option>
+            <option value="income">Income</option>
+            <option value="transfer">Transfer</option>
+          </select>
+        </div>
+        <div id="historyList" class="transaction-list history-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <template id="walletCardTemplate">
+    <article class="wallet-card">
+      <span class="wallet-label"></span>
+      <strong class="wallet-value"></strong>
+      <small class="wallet-caption"></small>
+    </article>
+  </template>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">🌙</button>
+  <input type="file" id="importFileInput" accept=".json" class="is-hidden">
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

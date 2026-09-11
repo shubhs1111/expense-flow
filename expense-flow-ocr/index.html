@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expense Flow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Personal finance dashboard</p>
+        <h1>Track daily spending without losing sight of your bigger money picture.</h1>
+        <p class="hero-copy">
+          Log each spend, watch your daily, weekly, and monthly patterns, and keep an eye on balances across your current account, savings, and investments.
+        </p>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span>Total Spent This Month</span>
+          <strong id="monthSpendHero">Rs 0</strong>
+        </div>
+        <div class="hero-stat">
+          <span>Available Across Wallets</span>
+          <strong id="netWorthHero">Rs 0</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <section class="panel panel-form">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Capture activity</p>
+            <h2>Add a transaction</h2>
+            <p id="formModeCopy" class="helper-copy">Create a new expense, income, or transfer entry.</p>
+          </div>
+        </div>
+
+        <form id="transactionForm" class="transaction-form">
+          <label>
+            Type
+            <select id="entryType" name="type">
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+              <option value="transfer">Transfer</option>
+            </select>
+          </label>
+
+          <label>
+            Title
+            <input id="entryTitle" name="title" type="text" placeholder="Groceries, cab, salary..." required>
+          </label>
+
+          <label>
+            Amount
+            <input id="entryAmount" name="amount" type="number" min="0" step="0.01" placeholder="0.00" required>
+          </label>
+
+          <label id="categoryField">
+            Category
+            <select id="entryCategory" name="category"></select>
+          </label>
+
+          <label id="accountField">
+            Account
+            <select id="entryAccount" name="account"></select>
+          </label>
+
+          <label id="fromAccountField" class="is-hidden">
+            From account
+            <select id="entryFromAccount" name="fromAccount"></select>
+          </label>
+
+          <label id="toAccountField" class="is-hidden">
+            To account
+            <select id="entryToAccount" name="toAccount"></select>
+          </label>
+
+          <label>
+            Date
+            <input id="entryDate" name="date" type="date" required>
+          </label>
+
+          <label class="form-notes">
+            Notes
+            <textarea id="entryNotes" name="notes" rows="3" placeholder="Optional details"></textarea>
+          </label>
+
+          <div class="action-row">
+            <button id="submitButton" type="submit" class="primary-button">Save Transaction</button>
+            <button id="cancelEditButton" type="button" class="secondary-button is-hidden">Cancel Edit</button>
+          </div>
+        </form>
+
+      </section>
+
+      <section class="panel panel-ocr-import">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Screenshot capture</p>
+            <h2>Import from passbook</h2>
+            <p class="helper-copy">Upload passbook screenshots, review the detected rows, then add them to this OCR test app.</p>
+          </div>
+          <span class="ocr-badge">Separate test copy</span>
+        </div>
+        <label class="file-picker">
+          Screenshots
+          <input id="ocrFiles" type="file" accept="image/*" multiple>
+        </label>
+        <div class="ocr-actions">
+          <button id="runOcrButton" type="button" class="primary-button">Read Screenshots</button>
+          <span id="ocrStatus" class="helper-copy" aria-live="polite">No screenshots selected.</span>
+        </div>
+        <div id="ocrPreview" class="ocr-preview is-hidden">
+          <div class="ocr-preview-heading">
+            <div>
+              <h3>Review detected transactions</h3>
+              <p class="helper-copy">OCR can misread bank rows, so check the date, amount, category, and account before importing.</p>
+            </div>
+            <button id="importOcrButton" type="button" class="secondary-button">Import Reviewed Rows</button>
+          </div>
+          <div id="ocrRows" class="ocr-rows"></div>
+        </div>
+      </section>
+
+      <section class="panel panel-wallets">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Wallet overview</p>
+            <h2>Balances by account</h2>
+          </div>
+        </div>
+        <div id="walletCards" class="wallet-grid"></div>
+        <form id="balanceForm" class="balance-form">
+          <label>
+            Current account
+            <input id="balanceCurrent" type="number" min="0" step="0.01">
+          </label>
+          <label>
+            Savings account
+            <input id="balanceSavings" type="number" min="0" step="0.01">
+          </label>
+          <label>
+            Investments
+            <input id="balanceInvestments" type="number" min="0" step="0.01">
+          </label>
+          <label>
+            Credit card due
+            <input id="balanceCreditCard" type="number" min="0" step="0.01">
+          </label>
+          <button type="submit" class="secondary-button">Update Opening Balances</button>
+        </form>
+        <form id="creditCardBillForm" class="bill-form">
+          <label>
+            Credit card bill generated on
+            <input id="creditCardStatementDate" type="date">
+          </label>
+          <button type="submit" class="secondary-button">Update Bill Cycle</button>
+        </form>
+        <div class="action-row">
+          <button id="startMonthButton" type="button" class="secondary-button">Start Fresh Month</button>
+          <button id="restoreBackupButton" type="button" class="secondary-button">Restore Last Backup</button>
+          <button id="resetAllButton" type="button" class="danger-button">Reset All Data</button>
+        </div>
+        <p id="backupStatus" class="helper-copy">Restore points are created before clear or delete actions.</p>
+        <p class="helper-copy">
+          Monthly workflow: update your opening balances on the 1st, then use Start Fresh Month to clear last month's transactions and begin a clean cycle.
+        </p>
+      </section>
+
+      <section class="panel panel-insights">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Spending pulse</p>
+            <h2>Trend breakdown</h2>
+          </div>
+        </div>
+
+        <div class="summary-grid">
+          <article class="summary-card">
+            <span>Today</span>
+            <strong id="todaySpend">Rs 0</strong>
+            <small id="todayChange">No change yet</small>
+          </article>
+          <article class="summary-card">
+            <span>This Week</span>
+            <strong id="weekSpend">Rs 0</strong>
+            <small id="weekChange">No change yet</small>
+          </article>
+          <article class="summary-card">
+            <span>This Month</span>
+            <strong id="monthSpend">Rs 0</strong>
+            <small id="monthChange">No change yet</small>
+          </article>
+        </div>
+
+        <div class="chart-tabs">
+          <button class="tab-button is-active" data-range="daily">Daily</button>
+          <button class="tab-button" data-range="weekly">Weekly</button>
+          <button class="tab-button" data-range="monthly">Monthly</button>
+        </div>
+
+        <div class="chart-card">
+          <div id="chartScroll" class="chart-scroll">
+            <canvas id="trendChart" width="900" height="320" aria-label="Spending trend chart"></canvas>
+          </div>
+          <div id="chartTooltip" class="chart-tooltip is-hidden"></div>
+        </div>
+      </section>
+
+      <section class="panel panel-spend-dashboard">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Category intelligence</p>
+            <h2>Spend dashboard</h2>
+            <p id="comparisonRangeCopy" class="helper-copy">Compare this week with last week.</p>
+          </div>
+          <div class="comparison-tabs" aria-label="Choose comparison period">
+            <button class="comparison-tab-button is-active" data-comparison-range="weekly">Week over week</button>
+            <button class="comparison-tab-button" data-comparison-range="monthly">Month over month</button>
+          </div>
+        </div>
+        <div id="comparisonSummary" class="comparison-summary"></div>
+        <div id="comparisonList" class="comparison-list"></div>
+      </section>
+
+      <section id="categoryDistribution" class="panel panel-categories">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Where money goes</p>
+            <h2>Category distribution</h2>
+          </div>
+        </div>
+        <div class="category-tabs">
+          <button class="category-tab-button" data-category-range="daily">Daily</button>
+          <button class="category-tab-button is-active" data-category-range="weekly">Weekly</button>
+          <button class="category-tab-button" data-category-range="monthly">Monthly</button>
+        </div>
+        <div class="period-controls">
+          <button id="categoryPrevButton" type="button" class="mini-button">Previous</button>
+          <p id="categoryRangeCopy" class="helper-copy">Current week category split</p>
+          <button id="categoryNextButton" type="button" class="mini-button">Next</button>
+          <button id="categoryCurrentButton" type="button" class="mini-button">Current</button>
+        </div>
+        <div id="categoryList" class="category-list"></div>
+      </section>
+
+      <section class="panel panel-transactions">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Timeline</p>
+            <h2>Recent transactions</h2>
+          </div>
+          <a class="text-button" href="#transactionHistory">View full history</a>
+        </div>
+        <div id="transactionList" class="transaction-list"></div>
+      </section>
+
+      <section id="transactionHistory" class="panel panel-history">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Archive</p>
+            <h2>Transaction history</h2>
+            <p id="historyCount" class="helper-copy">All saved transactions appear here.</p>
+          </div>
+          <a class="text-button" href="#top">Back to top</a>
+        </div>
+        <div id="historyList" class="transaction-list history-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <template id="walletCardTemplate">
+    <article class="wallet-card">
+      <span class="wallet-label"></span>
+      <strong class="wallet-value"></strong>
+      <small class="wallet-caption"></small>
+    </article>
+  </template>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
