@@ -308,6 +308,9 @@ function bootstrap() {
   entryDate.value = todayLocal();
   syncFormVisibility();
   render();
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+  window.scrollTo(0, 0);
+  setActiveNav("overview");
   setupScrollSpy();
 
   transactionForm.addEventListener("submit", handleSubmit);
@@ -408,19 +411,30 @@ let scrollSpyObserver = null;
 function setupScrollSpy() {
   if (scrollSpyObserver) scrollSpyObserver.disconnect();
   const map = new Map();
+  const visible = new Set();
   sideLinks.forEach((link) => {
     const el = link.dataset.scroll ? document.getElementById(link.dataset.scroll) : null;
     if (el) map.set(el, link);
   });
   if (!map.size) return;
+
+  const updateActive = () => {
+    let best = null;
+    visible.forEach((el) => {
+      const top = el.getBoundingClientRect().top;
+      if (!best || top < best.top) best = { el, top };
+    });
+    if (best) setActiveNav(map.get(best.el).dataset.nav);
+  };
+
   scrollSpyObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        const link = map.get(entry.target);
-        if (link) setActiveNav(link.dataset.nav);
-      }
+      if (entry.isIntersecting) visible.add(entry.target);
+      else visible.delete(entry.target);
     });
-  }, { rootMargin: "-84px 0px -66% 0px", threshold: 0 });
+    updateActive();
+  }, { rootMargin: "-84px 0px -70% 0px", threshold: 0 });
+
   map.forEach((_, el) => scrollSpyObserver.observe(el));
 }
 
