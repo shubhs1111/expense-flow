@@ -136,15 +136,15 @@ button, input, select, textarea { font: inherit; }
 }
 
 .brand-mark {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   flex: none;
   display: grid;
   place-items: center;
-  border-radius: 11px;
+  border-radius: 12px;
   color: #fff;
-  background: linear-gradient(140deg, var(--brand) 0%, var(--brand-2) 100%);
-  box-shadow: 0 6px 14px var(--brand-soft);
+  background: linear-gradient(145deg, #17cf93 0%, #0f9d76 52%, #0a6f57 100%);
+  box-shadow: 0 8px 18px rgba(15, 157, 118, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .brand-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
