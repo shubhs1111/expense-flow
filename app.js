@@ -61,7 +61,8 @@ const defaultState = {
     creditCard: 0
   },
   settings: {
-    creditCardStatementDate: getDefaultCreditCardStatementDate()
+    creditCardStatementDate: getDefaultCreditCardStatementDate(),
+    currency: "INR"
   },
   transactions: []
 };
@@ -101,6 +102,7 @@ const balanceInvestments = document.getElementById("balanceInvestments");
 const balanceCreditCard = document.getElementById("balanceCreditCard");
 const creditCardBillForm = document.getElementById("creditCardBillForm");
 const creditCardStatementDate = document.getElementById("creditCardStatementDate");
+const currencySelect = document.getElementById("currencySelect");
 const startMonthButton = document.getElementById("startMonthButton");
 const restoreBackupButton = document.getElementById("restoreBackupButton");
 const resetAllButton = document.getElementById("resetAllButton");
@@ -159,6 +161,9 @@ const userDisplayName = document.getElementById("userDisplayName");
 let chartPoints = [];
 let voiceRecognition = null;
 let isRecording = false;
+
+// Currency changes instantly on selection
+currencySelect.addEventListener("change", handleCurrencyChange);
 
 // Auth event listeners
 setupAuthUI();
@@ -498,6 +503,13 @@ function handleCreditCardBillSubmit(event) {
   state.settings.creditCardStatementDate = creditCardStatementDate.value || getDefaultCreditCardStatementDate();
   saveState();
   render();
+}
+
+function handleCurrencyChange() {
+  state.settings.currency = currencySelect.value;
+  saveState();
+  render();
+  showToast(`Currency set to ${currencySelect.value}`, "success");
 }
 
 function handleStartFreshMonth() {
@@ -870,6 +882,7 @@ function renderWallets() {
   balanceInvestments.value = state.baseBalances.investments;
   balanceCreditCard.value = state.baseBalances.creditCard;
   creditCardStatementDate.value = state.settings.creditCardStatementDate;
+  currencySelect.value = state.settings.currency || "INR";
 }
 
 function calculateCreditCardBillSnapshot(totalOwed) {
@@ -1311,11 +1324,21 @@ function labelForAccount(accountId) {
   return ACCOUNTS.find((account) => account.id === accountId)?.label || accountId;
 }
 
+const CURRENCY_LOCALE = {
+  INR: "en-IN", USD: "en-US", EUR: "de-DE", GBP: "en-GB", JPY: "ja-JP",
+  AUD: "en-AU", CAD: "en-CA", CHF: "de-CH", CNY: "zh-CN", SGD: "en-SG",
+  AED: "ar-AE", SAR: "ar-SA", BRL: "pt-BR", KRW: "ko-KR", MXN: "es-MX",
+  ZAR: "en-ZA", THB: "th-TH", IDR: "id-ID", MYR: "ms-MY", PHP: "en-PH"
+};
+
 function formatCurrency(value) {
-  return new Intl.NumberFormat("en-IN", {
+  const currency = state.settings.currency || "INR";
+  const locale = CURRENCY_LOCALE[currency] || "en-US";
+  const fractionDigits = 0;
+  return new Intl.NumberFormat(locale, {
     style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0
+    currency: currency,
+    maximumFractionDigits: fractionDigits
   }).format(value);
 }
 

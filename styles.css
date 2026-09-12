@@ -800,6 +800,13 @@ small {
 .summary-card {
   border-radius: var(--radius-lg);
   padding: 18px;
+  overflow: hidden;
+}
+
+.wallet-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .wallet-card:nth-child(2) {

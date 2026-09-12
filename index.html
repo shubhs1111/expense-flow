@@ -84,11 +84,11 @@
       <div class="hero-stats">
         <div class="hero-stat">
           <span>Total Spent This Month</span>
-          <strong id="monthSpendHero">Rs 0</strong>
+          <strong id="monthSpendHero">—</strong>
         </div>
         <div class="hero-stat">
           <span>Available Across Wallets</span>
-          <strong id="netWorthHero">Rs 0</strong>
+          <strong id="netWorthHero">—</strong>
         </div>
       </div>
     </header>
@@ -216,6 +216,33 @@
           </label>
           <button type="submit" class="secondary-button">Update Opening Balances</button>
         </form>
+        <div id="currencySection" class="bill-form">
+          <label>
+            Currency
+            <select id="currencySelect">
+              <option value="INR">🇮🇳 INR — Indian Rupee</option>
+              <option value="USD">🇺🇸 USD — US Dollar</option>
+              <option value="EUR">🇪🇺 EUR — Euro</option>
+              <option value="GBP">🇬🇧 GBP — British Pound</option>
+              <option value="JPY">🇯🇵 JPY — Japanese Yen</option>
+              <option value="AUD">🇦🇺 AUD — Australian Dollar</option>
+              <option value="CAD">🇨🇦 CAD — Canadian Dollar</option>
+              <option value="CHF">🇨🇭 CHF — Swiss Franc</option>
+              <option value="CNY">🇨🇳 CNY — Chinese Yuan</option>
+              <option value="SGD">🇸🇬 SGD — Singapore Dollar</option>
+              <option value="AED">🇦🇪 AED — UAE Dirham</option>
+              <option value="SAR">🇸🇦 SAR — Saudi Riyal</option>
+              <option value="BRL">🇧🇷 BRL — Brazilian Real</option>
+              <option value="KRW">🇰🇷 KRW — South Korean Won</option>
+              <option value="MXN">🇲🇽 MXN — Mexican Peso</option>
+              <option value="ZAR">🇿🇦 ZAR — South African Rand</option>
+              <option value="THB">🇹🇭 THB — Thai Baht</option>
+              <option value="IDR">🇮🇩 IDR — Indonesian Rupiah</option>
+              <option value="MYR">🇲🇾 MYR — Malaysian Ringgit</option>
+              <option value="PHP">🇵🇭 PHP — Philippine Peso</option>
+            </select>
+          </label>
+        </div>
         <form id="creditCardBillForm" class="bill-form">
           <label>
             Credit card bill generated on
@@ -243,22 +270,22 @@
         <div class="quick-stats-row">
           <article class="quick-stat">
             <span>Today</span>
-            <strong id="todaySpend">Rs 0</strong>
+            <strong id="todaySpend">—</strong>
             <small id="todayChange" class="delta-badge">-</small>
           </article>
           <article class="quick-stat">
             <span>This Week</span>
-            <strong id="weekSpend">Rs 0</strong>
+            <strong id="weekSpend">—</strong>
             <small id="weekChange" class="delta-badge">-</small>
           </article>
           <article class="quick-stat">
             <span>This Month</span>
-            <strong id="monthSpend">Rs 0</strong>
+            <strong id="monthSpend">—</strong>
             <small id="monthChange" class="delta-badge">-</small>
           </article>
           <article class="quick-stat">
             <span>Daily Average</span>
-            <strong id="insightAverageDaily">Rs 0</strong>
+            <strong id="insightAverageDaily">—</strong>
             <small>this month so far</small>
           </article>
         </div>
