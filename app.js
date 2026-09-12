@@ -104,13 +104,24 @@ const creditCardBillForm = document.getElementById("creditCardBillForm");
 const creditCardStatementDate = document.getElementById("creditCardStatementDate");
 const currencySelect = document.getElementById("currencySelect");
 const startMonthButton = document.getElementById("startMonthButton");
+const startMonthButtonAlt = document.getElementById("startMonthButtonAlt");
 const restoreBackupButton = document.getElementById("restoreBackupButton");
+const saveBackupButton = document.getElementById("saveBackupButton");
 const resetAllButton = document.getElementById("resetAllButton");
 const backupStatus = document.getElementById("backupStatus");
 const historyList = document.getElementById("historyList");
 const historyCount = document.getElementById("historyCount");
-const monthSpendHero = document.getElementById("monthSpendHero");
-const netWorthHero = document.getElementById("netWorthHero");
+const cycleLabel = document.getElementById("cycleLabel");
+const kpiSpentValue = document.getElementById("kpiSpentValue");
+const kpiSpentBadge = document.getElementById("kpiSpentBadge");
+const kpiSpentSub = document.getElementById("kpiSpentSub");
+const kpiAvailValue = document.getElementById("kpiAvailValue");
+const kpiAvailSub = document.getElementById("kpiAvailSub");
+const kpiVelocityValue = document.getElementById("kpiVelocityValue");
+const kpiVelocitySub = document.getElementById("kpiVelocitySub");
+const kpiCreditValue = document.getElementById("kpiCreditValue");
+const kpiCreditBadge = document.getElementById("kpiCreditBadge");
+const kpiCreditSub = document.getElementById("kpiCreditSub");
 const todaySpend = document.getElementById("todaySpend");
 const weekSpend = document.getElementById("weekSpend");
 const monthSpend = document.getElementById("monthSpend");
@@ -157,6 +168,12 @@ const signupError = document.getElementById("signupError");
 const googleSignInButton = document.getElementById("googleSignInButton");
 const logoutButton = document.getElementById("logoutButton");
 const userDisplayName = document.getElementById("userDisplayName");
+const userAvatar = document.getElementById("userAvatar");
+const userTier = document.getElementById("userTier");
+const logSpendButton = document.getElementById("logSpendButton");
+const menuToggle = document.getElementById("menuToggle");
+const sidebar = document.querySelector(".sidebar");
+const sideLinks = document.querySelectorAll(".side-link");
 
 let chartPoints = [];
 let voiceRecognition = null;
@@ -263,7 +280,13 @@ function showApp() {
   loadingScreen.classList.add("is-hidden");
   authScreen.classList.add("is-hidden");
   appShell.classList.remove("is-hidden");
-  userDisplayName.textContent = currentUser.displayName || currentUser.email;
+  const name = currentUser.displayName || (currentUser.email ? currentUser.email.split("@")[0] : "You");
+  userDisplayName.textContent = name;
+  if (userTier) userTier.textContent = currentUser.email || "Signed in";
+  if (userAvatar) {
+    const initials = name.trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join("");
+    userAvatar.textContent = (initials || name[0] || "?").toUpperCase();
+  }
 }
 
 function showAuthScreen() {
@@ -284,14 +307,16 @@ function bootstrap() {
   populateHistoryFilterCategories();
   entryDate.value = todayLocal();
   syncFormVisibility();
-  setActivePage(currentPage, false);
   render();
+  setupScrollSpy();
 
   transactionForm.addEventListener("submit", handleSubmit);
   balanceForm.addEventListener("submit", handleBalanceSubmit);
   creditCardBillForm.addEventListener("submit", handleCreditCardBillSubmit);
   startMonthButton.addEventListener("click", handleStartFreshMonth);
+  if (startMonthButtonAlt) startMonthButtonAlt.addEventListener("click", handleStartFreshMonth);
   restoreBackupButton.addEventListener("click", handleRestoreBackup);
+  if (saveBackupButton) saveBackupButton.addEventListener("click", handleSaveBackup);
   resetAllButton.addEventListener("click", handleResetAllData);
   entryType.addEventListener("change", syncFormVisibility);
   cancelEditButton.addEventListener("click", resetFormState);
@@ -312,8 +337,8 @@ function bootstrap() {
   document.addEventListener("keydown", (event) => {
     if ((event.ctrlKey || event.metaKey) && event.key === "n") {
       event.preventDefault();
-      setActivePage("home");
-      entryTitle.focus();
+      scrollToSection("captureCard");
+      setTimeout(() => entryTitle.focus(), 320);
     }
   });
 
@@ -335,31 +360,68 @@ function bootstrap() {
     });
   });
 
-  document.querySelectorAll(".app-tab").forEach((button) => {
-    button.addEventListener("click", () => setActivePage(button.dataset.page));
+  sideLinks.forEach((link) => {
+    link.addEventListener("click", () => {
+      setActiveNav(link.dataset.nav);
+      scrollToSection(link.dataset.scroll);
+      closeSidebar();
+    });
   });
 
-  document.querySelectorAll("[data-page-link]").forEach((link) => {
-    link.addEventListener("click", () => setActivePage(link.dataset.pageLink));
+  if (logSpendButton) {
+    logSpendButton.addEventListener("click", () => {
+      setActiveNav("capture");
+      scrollToSection("captureCard");
+      setTimeout(() => entryTitle.focus(), 320);
+    });
+  }
+
+  document.addEventListener("click", (event) => {
+    if (event.target.closest(".ledger-action")) return;
+    document.querySelectorAll(".row-menu.is-open").forEach((m) => m.classList.remove("is-open"));
+  });
+
+  if (menuToggle) menuToggle.addEventListener("click", () => sidebar.classList.toggle("is-open"));
+  document.addEventListener("click", (event) => {
+    if (!sidebar.classList.contains("is-open")) return;
+    if (sidebar.contains(event.target) || (menuToggle && menuToggle.contains(event.target))) return;
+    closeSidebar();
   });
 }
 
-function setActivePage(page, shouldScroll = true) {
-  currentPage = page;
-  document.querySelectorAll(".app-tab").forEach((tab) => {
-    tab.classList.toggle("is-active", tab.dataset.page === page);
-  });
-  document.querySelectorAll(".panel[data-page]").forEach((panel) => {
-    panel.classList.toggle("is-page-active", panel.dataset.page === page);
-  });
+function closeSidebar() {
+  if (sidebar) sidebar.classList.remove("is-open");
+}
 
-  if (page === "insights") {
-    requestAnimationFrame(renderTrendChart);
-  }
+function setActiveNav(navId) {
+  sideLinks.forEach((link) => link.classList.toggle("is-active", link.dataset.nav === navId));
+}
 
-  if (shouldScroll) {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+function scrollToSection(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const top = el.getBoundingClientRect().top + window.scrollY - 84;
+  window.scrollTo({ top: Math.max(top, 0), behavior: "smooth" });
+}
+
+let scrollSpyObserver = null;
+function setupScrollSpy() {
+  if (scrollSpyObserver) scrollSpyObserver.disconnect();
+  const map = new Map();
+  sideLinks.forEach((link) => {
+    const el = link.dataset.scroll ? document.getElementById(link.dataset.scroll) : null;
+    if (el) map.set(el, link);
+  });
+  if (!map.size) return;
+  scrollSpyObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        const link = map.get(entry.target);
+        if (link) setActiveNav(link.dataset.nav);
+      }
+    });
+  }, { rootMargin: "-84px 0px -66% 0px", threshold: 0 });
+  map.forEach((_, el) => scrollSpyObserver.observe(el));
 }
 
 function getUserDoc() {
@@ -399,14 +461,24 @@ function saveState() {
 }
 
 function createBackup(reason) {
-  if (!currentUser) return;
+  if (!currentUser) return Promise.resolve();
   const backup = {
     reason,
     createdAt: new Date().toISOString(),
     state: structuredClone(state)
   };
-  getUserDoc().collection("backups").doc("latest").set(backup)
+  return getUserDoc().collection("backups").doc("latest").set(backup)
     .catch((err) => console.error("Backup save failed", err));
+}
+
+async function handleSaveBackup() {
+  if (!currentUser) {
+    showToast("Sign in to save a backup point.", "error");
+    return;
+  }
+  await createBackup("manual backup");
+  await renderBackupStatus();
+  showToast("Backup point saved", "success");
 }
 
 async function loadBackup() {
@@ -565,6 +637,15 @@ function handleTransactionActions(event) {
     return;
   }
 
+  if (button.dataset.action === "menu") {
+    const menu = button.parentElement.querySelector(".row-menu");
+    const wasOpen = menu.classList.contains("is-open");
+    document.querySelectorAll(".row-menu.is-open").forEach((m) => m.classList.remove("is-open"));
+    if (!wasOpen) menu.classList.add("is-open");
+    event.stopPropagation();
+    return;
+  }
+
   const transaction = state.transactions.find((item) => item.id === button.dataset.id);
   if (!transaction) {
     return;
@@ -690,7 +771,7 @@ function renderCategoryBreakdown() {
   const max = sorted.length ? sorted[0][1] : 1;
 
   categoryBreakdownTotal.innerHTML = total
-    ? `<span class="breakdown-total-amount">${formatCurrency(total)}</span><span class="breakdown-total-label">total spent ${breakdownPeriod === "month" ? "this month" : "this week"}</span>`
+    ? `<span class="breakdown-total-amount">${formatCurrency(total)}</span><span class="breakdown-total-label">total ${breakdownPeriod === "month" ? "this month" : "this week"}</span>`
     : `<span class="breakdown-total-label">No spending recorded ${breakdownPeriod === "month" ? "this month" : "this week"}</span>`;
 
   if (!sorted.length) {
@@ -698,18 +779,164 @@ function renderCategoryBreakdown() {
     return;
   }
 
-  categoryBreakdown.innerHTML = sorted.map(([category, amount], i) => {
-    const percent = Math.round((amount / total) * 100);
-    const barWidth = Math.round((amount / max) * 100);
+  const colors = ["#0f9d76", "#8b5cf6", "#12b6cf", "#f5a623", "#f4526b", "#3b82f6", "#14b8a6", "#f97316", "#ec4899", "#84cc16", "#a855f7", "#06b6d4", "#78716c"];
+
+  let acc = 0;
+  const stops = sorted.map(([, amount], i) => {
+    const start = (acc / total) * 360;
+    acc += amount;
+    const end = (acc / total) * 360;
+    return `${colors[i % colors.length]} ${start}deg ${end}deg`;
+  }).join(", ");
+
+  const [topCategory, topAmount] = sorted[0];
+  const topPercent = Math.round((topAmount / total) * 100);
+
+  // Build SVG donut segments (r chosen so circumference ≈ 100 => percents map to dash lengths)
+  let cumulative = 0;
+  const segments = sorted.map(([category, amount], i) => {
+    const pct = (amount / total) * 100;
+    const dash = `${pct} ${100 - pct}`;
+    const offset = 25 - cumulative; // start at 12 o'clock, go clockwise
+    cumulative += pct;
+    return `<circle class="donut-seg" cx="21" cy="21" r="15.915" fill="none"
+      stroke="${colors[i % colors.length]}" stroke-width="5.5"
+      stroke-dasharray="${dash}" stroke-dashoffset="${offset}"
+      data-cat="${escapeHtml(category)}" data-amt="${formatCurrency(amount)}" data-pct="${Math.round(pct)}"
+      data-index="${i}"><title>${escapeHtml(category)} — ${formatCurrency(amount)} (${Math.round(pct)}%)</title></circle>`;
+  }).join("");
+
+  const legend = sorted.map(([category, amount], i) => {
+    const pct = Math.round((amount / total) * 100);
     return `
-      <div class="cat-row">
-        <div class="cat-row-name">${CATEGORY_EMOJI[category] || ""} ${escapeHtml(category)}</div>
-        <div class="cat-row-bar-track"><div class="cat-row-bar-fill cat-bar-color-${i % 13}" style="width:${barWidth}%"></div></div>
-        <div class="cat-row-amount">${formatCurrency(amount)}</div>
-        <div class="cat-row-percent">${percent}%</div>
+      <div class="legend-row" data-index="${i}">
+        <span class="legend-swatch" style="background:${colors[i % colors.length]}"></span>
+        <span class="legend-name">${CATEGORY_EMOJI[category] || ""} ${escapeHtml(category)}</span>
+        <span class="legend-amount">${formatCurrency(amount)}</span>
+        <span class="legend-pct">${pct}%</span>
       </div>
     `;
   }).join("");
+
+  categoryBreakdown.innerHTML = `
+    <div class="donut-wrap">
+      <div class="donut-chart">
+        <svg viewBox="0 0 42 42" class="donut-svg" role="img" aria-label="Category breakdown donut chart">
+          <circle cx="21" cy="21" r="15.915" fill="none" stroke="var(--chip)" stroke-width="5.5"></circle>
+          ${segments}
+        </svg>
+        <div class="donut-center">
+          <strong>${topPercent}%</strong>
+          <span>${escapeHtml(topCategory)}</span>
+        </div>
+      </div>
+      <div class="donut-side">
+        <div class="donut-legend">${legend}</div>
+        <p class="donut-hint">Click a slice or category to see its transactions</p>
+      </div>
+    </div>
+    <div class="category-detail is-hidden" id="categoryDetail"></div>
+  `;
+
+  wireDonutInteraction(topPercent, topCategory, { period, colors });
+}
+
+function wireDonutInteraction(defaultPct, defaultLabel, context) {
+  const segs = categoryBreakdown.querySelectorAll(".donut-seg");
+  const legendRows = categoryBreakdown.querySelectorAll(".legend-row");
+  const center = categoryBreakdown.querySelector(".donut-center");
+  if (!center) return;
+
+  const highlight = (index) => {
+    segs.forEach((s) => s.classList.toggle("is-active", Number(s.dataset.index) === index));
+    legendRows.forEach((r) => r.classList.toggle("is-active", Number(r.dataset.index) === index));
+    const seg = [...segs].find((s) => Number(s.dataset.index) === index);
+    if (seg) {
+      center.innerHTML = `<strong>${seg.dataset.pct}%</strong><span>${escapeHtml(seg.dataset.cat)}</span><em>${escapeHtml(seg.dataset.amt)}</em>`;
+    }
+  };
+
+  const reset = () => {
+    segs.forEach((s) => s.classList.remove("is-active"));
+    legendRows.forEach((r) => r.classList.remove("is-active"));
+    center.innerHTML = `<strong>${defaultPct}%</strong><span>${escapeHtml(defaultLabel)}</span>`;
+  };
+
+  const drill = (index) => {
+    const seg = [...segs].find((s) => Number(s.dataset.index) === index)
+      || [...legendRows].find((r) => Number(r.dataset.index) === index);
+    if (!seg) return;
+    showCategoryDetail(seg.dataset.cat, context.colors[index % context.colors.length], context.period);
+  };
+
+  segs.forEach((seg) => {
+    seg.addEventListener("mouseenter", () => highlight(Number(seg.dataset.index)));
+    seg.addEventListener("mouseleave", reset);
+    seg.addEventListener("click", () => drill(Number(seg.dataset.index)));
+  });
+  legendRows.forEach((row) => {
+    row.addEventListener("mouseenter", () => highlight(Number(row.dataset.index)));
+    row.addEventListener("mouseleave", reset);
+    row.addEventListener("click", () => drill(Number(row.dataset.index)));
+  });
+}
+
+function showCategoryDetail(category, color, period) {
+  const detail = document.getElementById("categoryDetail");
+  const wrap = categoryBreakdown.querySelector(".donut-wrap");
+  if (!detail || !wrap) return;
+
+  const txns = state.transactions
+    .filter(isSpendingEntry)
+    .filter((t) => t.category === category)
+    .filter((t) => {
+      const dt = parseLocalDate(t.date);
+      return dt >= period.start && dt <= period.end;
+    })
+    .sort((a, b) => b.amount - a.amount);
+
+  const total = txns.reduce((sum, t) => sum + t.amount, 0);
+
+  const rows = txns.length
+    ? txns.map((t) => {
+        const account = t.type === "transfer"
+          ? `${labelForAccount(t.fromAccount)} → ${labelForAccount(t.toAccount)}`
+          : labelForAccount(t.account);
+        return `
+          <div class="cd-row">
+            <span class="cd-icon">${CATEGORY_EMOJI[t.category] || "📌"}</span>
+            <div class="cd-text">
+              <div class="cd-title">${escapeHtml(t.title)}</div>
+              <div class="cd-meta">${formatDate(t.date)} · ${escapeHtml(account)}</div>
+            </div>
+            <div class="cd-amount">${formatCurrency(t.amount)}</div>
+          </div>`;
+      }).join("")
+    : `<div class="empty-state">No transactions in this category for this period.</div>`;
+
+  detail.innerHTML = `
+    <div class="cd-head">
+      <button class="cd-back" type="button">
+        <svg viewBox="0 0 24 24" fill="none" width="15" height="15"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back
+      </button>
+      <div class="cd-head-main">
+        <span class="cd-dot" style="background:${color}"></span>
+        <strong>${escapeHtml(category)}</strong>
+        <span class="cd-count">${txns.length} txn${txns.length === 1 ? "" : "s"}</span>
+      </div>
+      <span class="cd-total">${formatCurrency(total)}</span>
+    </div>
+    <div class="cd-list">${rows}</div>
+  `;
+
+  detail.querySelector(".cd-back").addEventListener("click", () => {
+    detail.classList.add("is-hidden");
+    wrap.classList.remove("is-hidden");
+  });
+
+  wrap.classList.add("is-hidden");
+  detail.classList.remove("is-hidden");
 }
 
 function renderComparisonPanel(range, summaryEl, tableEl) {
@@ -838,40 +1065,98 @@ async function renderBackupStatus() {
 }
 
 function renderHero() {
-  const monthTotal = spendingForPeriod("month", 0);
   const balances = calculateBalances();
-  const totalWorth = Object.entries(balances).reduce((sum, [accountId, value]) => {
-    return accountId === "creditCard" ? sum - value : sum + value;
-  }, 0);
+  const now = new Date();
+  const monthTotal = spendingForPeriod("month", 0);
+  const lastMonthTotal = spendingForPeriod("month", 1);
+  const todayTotal = spendingForPeriod("day", 0);
+  const elapsedDays = Math.max(1, now.getDate());
+  const dailyAvg = monthTotal / elapsedDays;
 
-  monthSpendHero.textContent = formatCurrency(monthTotal);
-  netWorthHero.textContent = formatCurrency(totalWorth);
+  if (cycleLabel) {
+    const monthName = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    cycleLabel.textContent = `${monthName} • Active cycle`;
+  }
+
+  // KPI 1 — Total Spent This Month
+  kpiSpentValue.textContent = formatCurrency(monthTotal);
+  if (lastMonthTotal > 0) {
+    const deltaPct = Math.round(((monthTotal - lastMonthTotal) / lastMonthTotal) * 100);
+    const down = deltaPct <= 0;
+    kpiSpentBadge.className = `badge ${down ? "" : "badge-red"}`.trim();
+    kpiSpentBadge.textContent = `${down ? "▼" : "▲"} ${Math.abs(deltaPct)}% vs last mo`;
+  } else {
+    kpiSpentBadge.className = "badge badge-blue";
+    kpiSpentBadge.textContent = "This month";
+  }
+  kpiSpentSub.innerHTML = `Avg <strong>${formatCurrency(dailyAvg)}</strong> / day`;
+
+  // KPI 2 — Available Across Wallets (liquid)
+  const liquid = (balances.current || 0) + (balances.savings || 0) + (balances.investments || 0);
+  const fundedCount = ["current", "savings", "investments"].filter((k) => (balances[k] || 0) > 0).length;
+  kpiAvailValue.textContent = formatCurrency(liquid);
+  kpiAvailSub.innerHTML = `Across <strong>${fundedCount}</strong> funded account${fundedCount === 1 ? "" : "s"}`;
+
+  // KPI 3 — Velocity & Pace (daily average)
+  kpiVelocityValue.textContent = formatCurrency(dailyAvg);
+  kpiVelocitySub.innerHTML = `Today <strong>${formatCurrency(todayTotal)}</strong>`;
+
+  // KPI 4 — Credit Card Due
+  const snapshot = calculateCreditCardBillSnapshot(balances.creditCard);
+  kpiCreditValue.textContent = formatCurrency(snapshot.billDue);
+  let nextStatement = new Date(snapshot.statementDate);
+  while (nextStatement <= now) {
+    nextStatement.setMonth(nextStatement.getMonth() + 1);
+  }
+  const daysToDue = Math.max(0, Math.ceil((nextStatement - now) / 86400000));
+  if (snapshot.billDue > 0) {
+    kpiCreditBadge.className = "badge badge-red";
+    kpiCreditBadge.textContent = `Due in ${daysToDue}d`;
+  } else {
+    kpiCreditBadge.className = "badge";
+    kpiCreditBadge.textContent = "Clear";
+  }
+  kpiCreditSub.innerHTML = `Cycle spend <strong>${formatCurrency(snapshot.currentCycleSpend)}</strong>`;
 }
 
 function renderWallets() {
   const balances = calculateBalances();
   walletCards.innerHTML = "";
 
+  const WALLET_META = {
+    current: { badge: "Primary", badgeClass: "", tag: "Primary liquidity" },
+    savings: { badge: "Reserve", badgeClass: "is-blue", tag: "Reserve vault" },
+    investments: { badge: "Growth", badgeClass: "is-amber", tag: "Brokerage & index" }
+  };
+
   ACCOUNTS.forEach((account) => {
     const node = walletCardTemplate.content.firstElementChild.cloneNode(true);
     const label = node.querySelector(".wallet-label");
+    const badge = node.querySelector(".wallet-badge");
     const value = node.querySelector(".wallet-value");
     const caption = node.querySelector(".wallet-caption");
 
-    node.querySelector(".wallet-label").textContent = account.label;
+    label.textContent = account.label;
 
     if (account.id === "creditCard") {
       const cardSnapshot = calculateCreditCardBillSnapshot(balances.creditCard);
-      node.classList.add("wallet-card-credit");
       label.textContent = "Credit Card";
+      badge.textContent = cardSnapshot.billDue > 0 ? "Bill due" : "Clear";
+      badge.className = `wallet-badge ${cardSnapshot.billDue > 0 ? "is-red" : ""}`.trim();
       value.textContent = formatCurrency(cardSnapshot.currentCycleSpend);
       caption.innerHTML = `
-        <span>Spends since ${formatDate(state.settings.creditCardStatementDate)}</span>
-        <span>Bill for ${formatDate(toLocalDateString(cardSnapshot.previousStatementDate))} - ${formatDate(state.settings.creditCardStatementDate)}: ${formatCurrency(cardSnapshot.billDue)}</span>
+        <span>Bill: ${formatCurrency(cardSnapshot.billDue)}</span>
+        <span>Stmt ${formatDate(state.settings.creditCardStatementDate)}</span>
       `;
     } else {
+      const meta = WALLET_META[account.id] || { badge: "", badgeClass: "", tag: "" };
+      badge.textContent = meta.badge;
+      badge.className = `wallet-badge ${meta.badgeClass}`.trim();
       value.textContent = formatCurrency(balances[account.id]);
-      caption.textContent = `${formatCurrency(state.baseBalances[account.id])} starting balance`;
+      caption.innerHTML = `
+        <span>${meta.tag}</span>
+        <span>${formatCurrency(state.baseBalances[account.id])} starting</span>
+      `;
     }
 
     walletCards.appendChild(node);
@@ -983,37 +1268,83 @@ function getSortedTransactions() {
   });
 }
 
+const CATEGORY_BADGE_CLASS = {
+  Food: "badge",
+  Groceries: "badge",
+  Salary: "badge-blue",
+  Investment: "badge-blue",
+  Bills: "badge-purple",
+  Entertainment: "badge-blue",
+  Shopping: "badge-blue",
+  Travel: "badge-amber",
+  Commute: "badge-amber",
+  Health: "badge-red",
+  Sports: "badge-amber",
+  Gifts: "badge-purple",
+  Other: "badge-muted"
+};
+
+function categoryBadge(transaction) {
+  if (transaction.type === "transfer") {
+    return { label: "Internal Transfer", cls: "badge-purple" };
+  }
+  if (transaction.type === "income") {
+    return { label: transaction.category, cls: "badge" };
+  }
+  return { label: transaction.category, cls: CATEGORY_BADGE_CLASS[transaction.category] || "badge-muted" };
+}
+
 function renderTransactionRows(transactions) {
+  const header = `
+    <div class="ledger-table">
+      <div class="ledger-thead">
+        <div>Transaction / Entity</div>
+        <div>Category</div>
+        <div>Source Account</div>
+        <div>Date &amp; Time</div>
+        <div class="ledger-right">Amount</div>
+        <div class="ledger-center">Action</div>
+      </div>
+      <div class="ledger-tbody">`;
+
   if (!transactions.length) {
-    return `<article class="transaction-row"><div><div class="transaction-title">No transactions yet</div><div class="transaction-meta"><span>Add your first transaction to build history.</span></div></div></article>`;
+    return header + `<div class="empty-state">No transactions yet. Add your first transaction to build history.</div></div></div>`;
   }
 
-  return transactions.map((transaction) => {
+  const rows = transactions.map((transaction) => {
     const accountCopy = transaction.type === "transfer"
-      ? `${labelForAccount(transaction.fromAccount)} -> ${labelForAccount(transaction.toAccount)}`
+      ? `${labelForAccount(transaction.fromAccount)} → ${labelForAccount(transaction.toAccount)}`
       : labelForAccount(transaction.account);
-    const amountPrefix = transaction.type === "expense" ? "-" : transaction.type === "income" ? "+" : "<>";
+    const amountPrefix = transaction.type === "expense" ? "-" : transaction.type === "income" ? "+" : "";
+    const badge = categoryBadge(transaction);
+    const dateCopy = transaction.date === todayLocal() ? "Today" : formatDate(transaction.date);
+    const desc = transaction.notes ? `<div class="ledger-entity-sub">${escapeHtml(transaction.notes)}</div>` : "";
 
     return `
-      <article class="transaction-row">
-        <div>
-          <div class="transaction-topline">
-            <div class="transaction-title">${escapeHtml(transaction.title)}</div>
-            <div class="transaction-actions">
-              <button type="button" class="mini-button" data-action="edit" data-id="${transaction.id}">Edit</button>
-              <button type="button" class="mini-button" data-action="delete" data-id="${transaction.id}">Delete</button>
-            </div>
-          </div>
-          <div class="transaction-meta">
-            <span>${formatDate(transaction.date)}</span>
-            <span><span class="category-emoji">${CATEGORY_EMOJI[transaction.category] || ""}</span>${transaction.category}</span>
-            <span>${accountCopy}</span>
+      <div class="ledger-row">
+        <div class="ledger-entity">
+          <span class="ledger-icon">${CATEGORY_EMOJI[transaction.category] || "📌"}</span>
+          <div class="ledger-entity-text">
+            <div class="ledger-entity-title">${escapeHtml(transaction.title)}</div>
+            ${desc}
           </div>
         </div>
-        <div class="transaction-amount ${transaction.type}">${amountPrefix}${formatCurrency(transaction.amount)}</div>
-      </article>
+        <div class="ledger-cat"><span class="badge ${badge.cls}">${escapeHtml(badge.label)}</span></div>
+        <div class="ledger-account">${escapeHtml(accountCopy)}</div>
+        <div class="ledger-date">${dateCopy}</div>
+        <div class="ledger-right transaction-amount ${transaction.type}">${amountPrefix}${formatCurrency(transaction.amount)}</div>
+        <div class="ledger-center ledger-action">
+          <button type="button" class="row-menu-btn" data-action="menu" data-id="${transaction.id}" aria-label="Row actions">⋯</button>
+          <div class="row-menu" data-menu-for="${transaction.id}">
+            <button type="button" data-action="edit" data-id="${transaction.id}">Edit</button>
+            <button type="button" data-action="delete" data-id="${transaction.id}">Delete</button>
+          </div>
+        </div>
+      </div>
     `;
   }).join("");
+
+  return header + rows + `</div></div>`;
 }
 
 function calculateBalances() {
@@ -1059,6 +1390,21 @@ function isSpendingEntry(transaction) {
   return transaction.type === "expense" || (transaction.type === "transfer" && transaction.toAccount === "investments");
 }
 
+function traceSmoothPath(ctx, pts) {
+  if (!pts.length) return;
+  ctx.moveTo(pts[0].x, pts[0].y);
+  if (pts.length < 3) {
+    for (let i = 1; i < pts.length; i += 1) ctx.lineTo(pts[i].x, pts[i].y);
+    return;
+  }
+  for (let i = 0; i < pts.length - 1; i += 1) {
+    const p0 = pts[i];
+    const p1 = pts[i + 1];
+    const cx = (p0.x + p1.x) / 2;
+    ctx.bezierCurveTo(cx, p0.y, cx, p1.y, p1.x, p1.y);
+  }
+}
+
 function renderTrendChart() {
   const ctx = trendCanvas.getContext("2d");
   const dpr = window.devicePixelRatio || 1;
@@ -1102,39 +1448,51 @@ function renderTrendChart() {
   chartPoints = points;
 
   const gradient = ctx.createLinearGradient(0, padding.top, 0, height - padding.bottom);
-  gradient.addColorStop(0, "rgba(200, 93, 47, 0.34)");
-  gradient.addColorStop(1, "rgba(200, 93, 47, 0)");
+  gradient.addColorStop(0, isDark ? "rgba(36, 201, 202, 0.28)" : "rgba(18, 182, 207, 0.28)");
+  gradient.addColorStop(1, "rgba(18, 182, 207, 0)");
 
+  // Smooth (curved) area fill
   ctx.beginPath();
-  points.forEach((point, index) => {
-    if (index === 0) {
-      ctx.moveTo(point.x, point.y);
-    } else {
-      ctx.lineTo(point.x, point.y);
-    }
-  });
+  traceSmoothPath(ctx, points);
   ctx.lineTo(points.at(-1).x, height - padding.bottom);
   ctx.lineTo(points[0].x, height - padding.bottom);
   ctx.closePath();
   ctx.fillStyle = gradient;
   ctx.fill();
 
+  // Average daily threshold line
+  const avgTotal = chartData.reduce((sum, item) => sum + item.total, 0) / Math.max(chartData.length, 1);
+  if (avgTotal > 0 && Number.isFinite(avgTotal)) {
+    const avgY = padding.top + innerHeight - (avgTotal / max) * innerHeight;
+    ctx.save();
+    ctx.setLineDash([6, 6]);
+    ctx.strokeStyle = isDark ? "rgba(240, 130, 130, 0.7)" : "rgba(244, 82, 107, 0.75)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(padding.left, avgY);
+    ctx.lineTo(width - padding.right, avgY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = '600 11px "Plus Jakarta Sans"';
+    ctx.fillStyle = isDark ? "rgba(240, 130, 130, 0.9)" : "rgba(214, 69, 90, 0.9)";
+    ctx.textAlign = "right";
+    const label = `Avg Daily Threshold · ${formatCurrency(avgTotal)}`;
+    ctx.fillText(label, width - padding.right - 4, avgY - 6);
+    ctx.restore();
+  }
+
+  // Smooth (curved) line
   ctx.beginPath();
-  points.forEach((point, index) => {
-    if (index === 0) {
-      ctx.moveTo(point.x, point.y);
-    } else {
-      ctx.lineTo(point.x, point.y);
-    }
-  });
-  ctx.strokeStyle = "#c85d2f";
+  traceSmoothPath(ctx, points);
+  ctx.strokeStyle = isDark ? "#24c9ca" : "#12b6cf";
   ctx.lineWidth = 3;
+  ctx.lineJoin = "round";
   ctx.stroke();
 
   points.forEach((point) => {
     ctx.beginPath();
     ctx.arc(point.x, point.y, 4.5, 0, Math.PI * 2);
-    ctx.fillStyle = "#116357";
+    ctx.fillStyle = isDark ? "#24c9ca" : "#0f9d76";
     ctx.fill();
   });
 
@@ -1149,6 +1507,9 @@ function renderTrendChart() {
   ctx.fillStyle = isDark ? "#e4ede9" : "#1d1a17";
   ctx.font = '600 13px "Plus Jakarta Sans"';
   ctx.fillText(chartTitle(currentRange), padding.left, 16);
+
+  // Default to the most recent dates (scroll to the right end).
+  chartScroll.scrollLeft = displayWidth;
 }
 
 function handleChartHover(event) {
@@ -1474,7 +1835,9 @@ function applyTheme() {
   const saved = localStorage.getItem("expense-flow-theme");
   if (saved === "dark") {
     document.documentElement.setAttribute("data-theme", "dark");
-    themeToggle.textContent = "☀️";
+    themeToggle.textContent = "☀️ Dark";
+  } else {
+    themeToggle.textContent = "🌙 Light";
   }
 }
 
@@ -1483,11 +1846,11 @@ function toggleTheme() {
   if (isDark) {
     document.documentElement.removeAttribute("data-theme");
     localStorage.setItem("expense-flow-theme", "light");
-    themeToggle.textContent = "🌙";
+    themeToggle.textContent = "🌙 Light";
   } else {
     document.documentElement.setAttribute("data-theme", "dark");
     localStorage.setItem("expense-flow-theme", "dark");
-    themeToggle.textContent = "☀️";
+    themeToggle.textContent = "☀️ Dark";
   }
   renderTrendChart();
 }
