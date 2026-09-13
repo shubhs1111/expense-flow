@@ -707,8 +707,8 @@ function populateFormForEdit(transaction) {
 
   submitButton.textContent = "Save Changes";
   cancelEditButton.classList.remove("is-hidden");
-  formModeCopy.textContent = "Editing an existing transaction. Update the values and save your changes.";
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (formModeCopy) formModeCopy.textContent = "Editing an existing transaction. Update the values and save your changes.";
+  scrollToSection("captureCard");
 }
 
 function resetFormState(options = {}) {
@@ -740,7 +740,7 @@ function resetFormState(options = {}) {
   syncFormVisibility();
   submitButton.textContent = "Save Transaction";
   cancelEditButton.classList.add("is-hidden");
-  formModeCopy.textContent = "Create a new expense, income, or transfer entry.";
+  if (formModeCopy) formModeCopy.textContent = "Create a new expense, income, or transfer entry.";
 }
 
 function render() {
