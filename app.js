@@ -101,8 +101,6 @@ const balanceCurrent = document.getElementById("balanceCurrent");
 const balanceSavings = document.getElementById("balanceSavings");
 const balanceInvestments = document.getElementById("balanceInvestments");
 const balanceCreditCard = document.getElementById("balanceCreditCard");
-const creditCardBillForm = document.getElementById("creditCardBillForm");
-const creditCardStatementDate = document.getElementById("creditCardStatementDate");
 const resetCreditCardBillButton = document.getElementById("resetCreditCardBillButton");
 const ccBillDue = document.getElementById("ccBillDue");
 const ccBillMeta = document.getElementById("ccBillMeta");
@@ -317,7 +315,6 @@ function bootstrap() {
 
   transactionForm.addEventListener("submit", handleSubmit);
   balanceForm.addEventListener("submit", handleBalanceSubmit);
-  creditCardBillForm.addEventListener("submit", handleCreditCardBillSubmit);
   if (resetCreditCardBillButton) resetCreditCardBillButton.addEventListener("click", handleResetCreditCardBill);
   startMonthButton.addEventListener("click", handleStartFreshMonth);
   if (startMonthButtonAlt) startMonthButtonAlt.addEventListener("click", handleStartFreshMonth);
@@ -584,14 +581,6 @@ function handleBalanceSubmit(event) {
   saveState();
   render();
   showToast("Balances updated", "success");
-}
-
-function handleCreditCardBillSubmit(event) {
-  event.preventDefault();
-
-  state.settings.creditCardStatementDate = creditCardStatementDate.value || getDefaultCreditCardStatementDate();
-  saveState();
-  render();
 }
 
 function handleCurrencyChange() {
@@ -1180,7 +1169,6 @@ function renderWallets() {
   balanceSavings.value = state.baseBalances.savings;
   balanceInvestments.value = state.baseBalances.investments;
   balanceCreditCard.value = state.baseBalances.creditCard;
-  creditCardStatementDate.value = state.settings.creditCardStatementDate;
   currencySelect.value = state.settings.currency || "INR";
 
   if (ccBillDue) {

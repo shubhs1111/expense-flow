@@ -709,6 +709,8 @@ button, input, select, textarea { font: inherit; }
   border-top: 1px solid var(--border);
   padding-top: 8px;
 }
+.settings-card { padding: 8px 22px; }
+.settings-card .settings-disclosure { margin-top: 0; border-top: 0; padding-top: 0; }
 .settings-disclosure > summary {
   display: flex;
   align-items: center;

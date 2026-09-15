@@ -189,47 +189,6 @@
             </div>
             <button id="resetCreditCardBillButton" type="button" class="secondary-button">Mark Last Cycle Paid</button>
           </div>
-
-          <details class="settings-disclosure">
-            <summary>
-              <span>Account settings &amp; data</span>
-              <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </summary>
-            <div class="settings-body">
-              <form id="balanceForm" class="balance-form">
-                <label>
-                  Current account
-                  <input id="balanceCurrent" type="number" min="0" step="0.01">
-                </label>
-                <label>
-                  Savings account
-                  <input id="balanceSavings" type="number" min="0" step="0.01">
-                </label>
-                <label>
-                  Investments
-                  <input id="balanceInvestments" type="number" min="0" step="0.01">
-                </label>
-                <label>
-                  Credit card due
-                  <input id="balanceCreditCard" type="number" min="0" step="0.01">
-                </label>
-                <button type="submit" class="secondary-button">Update Opening Balances</button>
-              </form>
-
-              <form id="creditCardBillForm" class="bill-form">
-                <label>
-                  Credit card bill generated on
-                  <input id="creditCardStatementDate" type="date">
-                </label>
-                <button type="submit" class="secondary-button">Update Bill Cycle</button>
-              </form>
-
-              <div class="action-row">
-                <button id="resetAllButton" type="button" class="danger-button">Reset All Data</button>
-              </div>
-              <p id="backupStatus" class="helper-copy">Restore points are created before clear or delete actions. Export, import, restore &amp; fresh-month controls live on the Transactions Ledger page.</p>
-            </div>
-          </details>
         </section>
 
         <!-- Quick capture -->
@@ -475,6 +434,42 @@
             <button id="restoreBackupButton" type="button" class="banner-button">Restore Last Backup</button>
             <button id="startMonthButtonAlt" type="button" class="banner-button banner-button-primary">Start Fresh Month</button>
           </div>
+        </section>
+
+        <!-- ===== ACCOUNT SETTINGS & DATA ===== -->
+        <section class="card settings-card">
+          <details class="settings-disclosure">
+            <summary>
+              <span>Account settings &amp; data</span>
+              <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </summary>
+            <div class="settings-body">
+              <form id="balanceForm" class="balance-form">
+                <label>
+                  Current account
+                  <input id="balanceCurrent" type="number" min="0" step="0.01">
+                </label>
+                <label>
+                  Savings account
+                  <input id="balanceSavings" type="number" min="0" step="0.01">
+                </label>
+                <label>
+                  Investments
+                  <input id="balanceInvestments" type="number" min="0" step="0.01">
+                </label>
+                <label>
+                  Credit card due
+                  <input id="balanceCreditCard" type="number" min="0" step="0.01">
+                </label>
+                <button type="submit" class="secondary-button">Update Opening Balances</button>
+              </form>
+
+              <div class="action-row">
+                <button id="resetAllButton" type="button" class="danger-button">Reset All Data</button>
+              </div>
+              <p id="backupStatus" class="helper-copy">Restore points are created before clear or delete actions. Export, import, restore &amp; fresh-month controls live on the Transactions Ledger page.</p>
+            </div>
+          </details>
         </section>
 
       </main>
