@@ -62,6 +62,7 @@ const defaultState = {
   },
   settings: {
     creditCardStatementDate: getDefaultCreditCardStatementDate(),
+    creditCardBillPaidThrough: getDefaultCreditCardStatementDate(),
     currency: "INR"
   },
   transactions: []
@@ -102,6 +103,9 @@ const balanceInvestments = document.getElementById("balanceInvestments");
 const balanceCreditCard = document.getElementById("balanceCreditCard");
 const creditCardBillForm = document.getElementById("creditCardBillForm");
 const creditCardStatementDate = document.getElementById("creditCardStatementDate");
+const resetCreditCardBillButton = document.getElementById("resetCreditCardBillButton");
+const ccBillDue = document.getElementById("ccBillDue");
+const ccBillMeta = document.getElementById("ccBillMeta");
 const currencySelect = document.getElementById("currencySelect");
 const startMonthButton = document.getElementById("startMonthButton");
 const startMonthButtonAlt = document.getElementById("startMonthButtonAlt");
@@ -304,6 +308,7 @@ function bootstrap() {
   populateHistoryFilterCategories();
   entryDate.value = todayLocal();
   syncFormVisibility();
+  autoResetCreditCardBillIfDue();
   render();
   if ("scrollRestoration" in history) history.scrollRestoration = "manual";
   window.scrollTo(0, 0);
@@ -313,6 +318,7 @@ function bootstrap() {
   transactionForm.addEventListener("submit", handleSubmit);
   balanceForm.addEventListener("submit", handleBalanceSubmit);
   creditCardBillForm.addEventListener("submit", handleCreditCardBillSubmit);
+  if (resetCreditCardBillButton) resetCreditCardBillButton.addEventListener("click", handleResetCreditCardBill);
   startMonthButton.addEventListener("click", handleStartFreshMonth);
   if (startMonthButtonAlt) startMonthButtonAlt.addEventListener("click", handleStartFreshMonth);
   restoreBackupButton.addEventListener("click", handleRestoreBackup);
@@ -1117,11 +1123,12 @@ function renderHero() {
   if (snapshot.billDue > 0) {
     kpiCreditBadge.className = "badge badge-red";
     kpiCreditBadge.textContent = `Due in ${daysToDue}d`;
+    kpiCreditSub.innerHTML = `Accrued since <strong>${formatDate(toLocalDateString(snapshot.paidThrough))}</strong>`;
   } else {
     kpiCreditBadge.className = "badge";
     kpiCreditBadge.textContent = "Clear";
+    kpiCreditSub.innerHTML = `Cleared · resets on the 15th`;
   }
-  kpiCreditSub.innerHTML = `Cycle spend <strong>${formatCurrency(snapshot.currentCycleSpend)}</strong>`;
 }
 
 function renderWallets() {
@@ -1173,6 +1180,16 @@ function renderWallets() {
   balanceCreditCard.value = state.baseBalances.creditCard;
   creditCardStatementDate.value = state.settings.creditCardStatementDate;
   currencySelect.value = state.settings.currency || "INR";
+
+  if (ccBillDue) {
+    const snapshot = calculateCreditCardBillSnapshot(balances.creditCard);
+    ccBillDue.textContent = formatCurrency(snapshot.amountDue);
+    const paidThroughLabel = formatDate(state.settings.creditCardBillPaidThrough || getDefaultCreditCardStatementDate());
+    ccBillMeta.textContent = snapshot.amountDue > 0
+      ? `Accrued since ${paidThroughLabel} · auto-resets on the 15th`
+      : `Cleared as of ${paidThroughLabel} · auto-resets on the 15th`;
+    if (resetCreditCardBillButton) resetCreditCardBillButton.disabled = snapshot.amountDue <= 0;
+  }
 }
 
 function calculateCreditCardBillSnapshot(totalOwed) {
@@ -1180,27 +1197,62 @@ function calculateCreditCardBillSnapshot(totalOwed) {
   const previousStatementDate = new Date(statementDate);
   previousStatementDate.setMonth(previousStatementDate.getMonth() - 1);
 
+  const paidThrough = parseLocalDate(state.settings.creditCardBillPaidThrough || getDefaultCreditCardStatementDate());
+
   const creditCardExpenses = state.transactions
     .filter((t) => t.type === "expense" && t.account === "creditCard");
 
-  const billDue = creditCardExpenses
-    .filter((t) => {
-      const d = parseLocalDate(t.date);
-      return d > previousStatementDate && d <= statementDate;
-    })
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const currentCycleSpend = creditCardExpenses
-    .filter((t) => parseLocalDate(t.date) > statementDate)
+  // Amount due = credit-card spending accrued since the bill was last cleared
+  // (either a manual "Mark Bill Paid" or the automatic reset on the 15th).
+  const amountDue = creditCardExpenses
+    .filter((t) => parseLocalDate(t.date) > paidThrough)
     .reduce((sum, t) => sum + t.amount, 0);
 
   return {
-    currentCycleSpend,
-    billDue,
+    currentCycleSpend: amountDue,
+    billDue: amountDue,
+    amountDue,
     totalOwed,
     statementDate,
-    previousStatementDate
+    previousStatementDate,
+    paidThrough
   };
+}
+
+// The most recent bill-day (15th) that has occurred, inclusive of today.
+function mostRecentStatement15th(referenceDate = new Date()) {
+  const dt = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), CREDIT_CARD_BILL_DAY);
+  if (referenceDate.getDate() < CREDIT_CARD_BILL_DAY) {
+    dt.setMonth(dt.getMonth() - 1);
+  }
+  return dt.toLocaleDateString("en-CA");
+}
+
+// Auto-reset the credit-card bill on the 15th: if a bill-day (15th) has occurred
+// since the bill was last cleared, advance the paid-through marker to it.
+function autoResetCreditCardBillIfDue() {
+  const latest15th = mostRecentStatement15th();
+  const current = state.settings.creditCardBillPaidThrough || getDefaultCreditCardStatementDate();
+  if (parseLocalDate(latest15th) > parseLocalDate(current)) {
+    state.settings.creditCardBillPaidThrough = latest15th;
+    saveState();
+  }
+}
+
+function handleResetCreditCardBill() {
+  const balances = calculateBalances();
+  const snapshot = calculateCreditCardBillSnapshot(balances.creditCard);
+  if (snapshot.amountDue <= 0) {
+    showToast("Credit card bill is already ₹0.", "info");
+    return;
+  }
+  const confirmed = confirm(`Mark the credit card bill of ${formatCurrency(snapshot.amountDue)} as paid? The due amount resets to ${formatCurrency(0)} and new spending accrues fresh.`);
+  if (!confirmed) return;
+
+  state.settings.creditCardBillPaidThrough = todayLocal();
+  saveState();
+  render();
+  showToast("Credit card bill reset to ₹0", "success");
 }
 
 function getDefaultCreditCardStatementDate(referenceDate = new Date()) {
