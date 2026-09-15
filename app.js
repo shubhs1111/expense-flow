@@ -124,11 +124,8 @@ const kpiCreditBadge = document.getElementById("kpiCreditBadge");
 const kpiCreditSub = document.getElementById("kpiCreditSub");
 const todaySpend = document.getElementById("todaySpend");
 const weekSpend = document.getElementById("weekSpend");
-const monthSpend = document.getElementById("monthSpend");
 const todayChange = document.getElementById("todayChange");
 const weekChange = document.getElementById("weekChange");
-const monthChange = document.getElementById("monthChange");
-const insightAverageDaily = document.getElementById("insightAverageDaily");
 const categoryBreakdownTotal = document.getElementById("categoryBreakdownTotal");
 const categoryBreakdown = document.getElementById("categoryBreakdown");
 const wowSummary = document.getElementById("wowSummary");
@@ -761,18 +758,12 @@ function renderQuickStats() {
   const yesterday = spendingForPeriod("day", 1);
   const week = spendingForPeriod("week", 0);
   const lastWeek = spendingForPeriod("week", 1);
-  const month = spendingForPeriod("month", 0);
-  const lastMonth = spendingForPeriod("month", 1);
-  const elapsedDays = Math.max(1, new Date().getDate());
 
   todaySpend.textContent = formatCurrency(today);
   weekSpend.textContent = formatCurrency(week);
-  monthSpend.textContent = formatCurrency(month);
-  insightAverageDaily.textContent = formatCurrency(month / elapsedDays);
 
   todayChange.textContent = buildDeltaCopy(today, yesterday, "vs yesterday");
   weekChange.textContent = buildDeltaCopy(week, lastWeek, "vs last week");
-  monthChange.textContent = buildDeltaCopy(month, lastMonth, "vs last month");
 }
 
 function renderCategoryBreakdown() {
@@ -1111,9 +1102,9 @@ function renderHero() {
   kpiAvailValue.textContent = formatCurrency(liquid);
   kpiAvailSub.innerHTML = `Across <strong>${fundedCount}</strong> funded account${fundedCount === 1 ? "" : "s"}`;
 
-  // KPI 3 — Velocity & Pace (daily average)
+  // KPI 3 — Daily Average
   kpiVelocityValue.textContent = formatCurrency(dailyAvg);
-  kpiVelocitySub.innerHTML = `Today <strong>${formatCurrency(todayTotal)}</strong>`;
+  kpiVelocitySub.innerHTML = `Over <strong>${elapsedDays}</strong> day${elapsedDays === 1 ? "" : "s"} this month`;
 
   // KPI 4 — Credit Card Due
   const snapshot = calculateCreditCardBillSnapshot(balances.creditCard);

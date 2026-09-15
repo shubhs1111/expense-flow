@@ -321,7 +321,7 @@
             <div class="kpi-sub" id="kpiAvailSub"></div>
           </article>
           <article class="kpi-card">
-            <div class="kpi-head"><span class="kpi-label">Velocity &amp; Pace</span><span class="badge badge-blue" id="kpiVelocityBadge">This month</span></div>
+            <div class="kpi-head"><span class="kpi-label">Daily Average</span><span class="badge badge-blue" id="kpiVelocityBadge">Per day</span></div>
             <strong class="kpi-value" id="kpiVelocityValue">—</strong>
             <div class="kpi-sub" id="kpiVelocitySub"></div>
           </article>
@@ -331,6 +331,20 @@
             <div class="kpi-sub" id="kpiCreditSub"></div>
           </article>
         </section>
+
+        <!-- Today / This Week quick trend -->
+        <div class="trend-chips">
+          <div class="trend-chip">
+            <span class="trend-chip-label">Today</span>
+            <strong id="todaySpend">—</strong>
+            <small id="todayChange" class="delta-badge">-</small>
+          </div>
+          <div class="trend-chip">
+            <span class="trend-chip-label">This Week</span>
+            <strong id="weekSpend">—</strong>
+            <small id="weekChange" class="delta-badge">-</small>
+          </div>
+        </div>
 
         <!-- Trend + Category -->
         <section class="overview-analytics">
@@ -367,31 +381,6 @@
             </div>
             <div id="categoryBreakdownTotal" class="breakdown-total"></div>
             <div id="categoryBreakdown" class="category-breakdown-list"></div>
-          </div>
-        </section>
-
-        <section class="card panel-quick-stats">
-          <div class="quick-stats-row">
-            <article class="quick-stat">
-              <span>Today</span>
-              <strong id="todaySpend">—</strong>
-              <small id="todayChange" class="delta-badge">-</small>
-            </article>
-            <article class="quick-stat">
-              <span>This Week</span>
-              <strong id="weekSpend">—</strong>
-              <small id="weekChange" class="delta-badge">-</small>
-            </article>
-            <article class="quick-stat">
-              <span>This Month</span>
-              <strong id="monthSpend">—</strong>
-              <small id="monthChange" class="delta-badge">-</small>
-            </article>
-            <article class="quick-stat">
-              <span>Daily Average</span>
-              <strong id="insightAverageDaily">—</strong>
-              <small>this month so far</small>
-            </article>
           </div>
         </section>
 

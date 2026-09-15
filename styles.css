@@ -452,6 +452,34 @@ button, input, select, textarea { font: inherit; }
 .kpi-sub { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
 .kpi-sub strong { font-weight: 700; color: var(--text-2); }
 
+/* Compact Today / This Week trend chips */
+.trend-chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.trend-chip {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  padding: 14px 18px;
+  box-shadow: var(--shadow);
+}
+.trend-chip-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.trend-chip strong {
+  font-family: var(--num);
+  font-weight: 800;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+}
+.trend-chip .delta-badge { font-size: 0.78rem; font-weight: 600; color: var(--muted); }
+
 /* ============ Capture card ============ */
 .capture-head { display: flex; align-items: flex-start; gap: 14px; }
 .capture-head-text { flex: 1; min-width: 0; }
@@ -1200,6 +1228,7 @@ button, input, select, textarea { font: inherit; }
 
 @media (max-width: 560px) {
   .kpi-row { grid-template-columns: 1fr; }
+  .trend-chips { grid-template-columns: 1fr; }
   .quick-stats-row { grid-template-columns: 1fr 1fr; }
   .quick-stat { border-right: none; border-bottom: 1px solid var(--border); }
   .wow-summary { grid-template-columns: 1fr; }
