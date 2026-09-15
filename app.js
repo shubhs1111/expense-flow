@@ -101,10 +101,6 @@ const balanceCurrent = document.getElementById("balanceCurrent");
 const balanceSavings = document.getElementById("balanceSavings");
 const balanceInvestments = document.getElementById("balanceInvestments");
 const balanceCreditCard = document.getElementById("balanceCreditCard");
-const resetCreditCardBillButton = document.getElementById("resetCreditCardBillButton");
-const ccBillDue = document.getElementById("ccBillDue");
-const ccBillMeta = document.getElementById("ccBillMeta");
-const ccBillPeriod = document.getElementById("ccBillPeriod");
 const currencySelect = document.getElementById("currencySelect");
 const startMonthButton = document.getElementById("startMonthButton");
 const startMonthButtonAlt = document.getElementById("startMonthButtonAlt");
@@ -315,7 +311,6 @@ function bootstrap() {
 
   transactionForm.addEventListener("submit", handleSubmit);
   balanceForm.addEventListener("submit", handleBalanceSubmit);
-  if (resetCreditCardBillButton) resetCreditCardBillButton.addEventListener("click", handleResetCreditCardBill);
   startMonthButton.addEventListener("click", handleStartFreshMonth);
   if (startMonthButtonAlt) startMonthButtonAlt.addEventListener("click", handleStartFreshMonth);
   restoreBackupButton.addEventListener("click", handleRestoreBackup);
@@ -1170,16 +1165,6 @@ function renderWallets() {
   balanceInvestments.value = state.baseBalances.investments;
   balanceCreditCard.value = state.baseBalances.creditCard;
   currencySelect.value = state.settings.currency || "INR";
-
-  if (ccBillDue) {
-    const snapshot = calculateCreditCardBillSnapshot(balances.creditCard);
-    if (ccBillPeriod) ccBillPeriod.textContent = `(since ${formatDate(toLocalDateString(snapshot.cycleStart))})`;
-    ccBillDue.textContent = formatCurrency(snapshot.currentBill);
-    const lastPeriod = `${formatDate(toLocalDateString(snapshot.lastCycleStart))} – ${formatDate(toLocalDateString(snapshot.lastCycleEnd))}`;
-    const lastStatus = snapshot.lastCyclePaid ? " · Paid ✓" : (snapshot.lastCycleDue > 0 ? " · Due" : "");
-    ccBillMeta.textContent = `Last credit card cycle (${lastPeriod}): ${formatCurrency(snapshot.lastCycleTotal)}${lastStatus}`;
-    if (resetCreditCardBillButton) resetCreditCardBillButton.disabled = snapshot.lastCycleDue <= 0;
-  }
 }
 
 // The 15th that starts the CURRENT cycle (inclusive of the 15th). On the 15th
@@ -1238,23 +1223,6 @@ function calculateCreditCardBillSnapshot(totalOwed) {
     statementTotal: lastCycleTotal,
     currentCycleSpend: currentBill
   };
-}
-
-function handleResetCreditCardBill() {
-  const balances = calculateBalances();
-  const snapshot = calculateCreditCardBillSnapshot(balances.creditCard);
-  if (snapshot.lastCycleDue <= 0) {
-    showToast(snapshot.lastCycleTotal > 0 ? "Last cycle's bill is already marked paid." : "No outstanding credit card bill to pay.", "info");
-    return;
-  }
-  const period = `${formatDate(toLocalDateString(snapshot.lastCycleStart))} – ${formatDate(toLocalDateString(snapshot.lastCycleEnd))}`;
-  const confirmed = confirm(`Mark last cycle's credit card bill of ${formatCurrency(snapshot.lastCycleDue)} (${period}) as paid?`);
-  if (!confirmed) return;
-
-  state.settings.creditCardBillPaidThrough = toLocalDateString(snapshot.cycleStart);
-  saveState();
-  render();
-  showToast("Credit card bill marked as paid", "success");
 }
 
 function getDefaultCreditCardStatementDate(referenceDate = new Date()) {
