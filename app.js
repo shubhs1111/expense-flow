@@ -1118,11 +1118,11 @@ function renderHero() {
   if (snapshot.billDue > 0) {
     kpiCreditBadge.className = "badge badge-red";
     kpiCreditBadge.textContent = "Bill due";
-    kpiCreditSub.innerHTML = `Statement since <strong>${formatDate(toLocalDateString(snapshot.statementStart))}</strong>`;
+    kpiCreditSub.innerHTML = `Bill since <strong>${formatDate(toLocalDateString(snapshot.periodStart))}</strong>`;
   } else {
     kpiCreditBadge.className = "badge";
     kpiCreditBadge.textContent = "Clear";
-    kpiCreditSub.innerHTML = `This cycle <strong>${formatCurrency(snapshot.thisCycleSpend)}</strong>`;
+    kpiCreditSub.innerHTML = `Cleared · bills on the 15th`;
   }
 }
 
@@ -1158,10 +1158,10 @@ function renderWallets() {
         badge.textContent = "Clear";
         badge.className = "wallet-badge";
       }
-      value.textContent = formatCurrency(cardSnapshot.statementTotal);
+      value.textContent = formatCurrency(cardSnapshot.billTotal);
       caption.innerHTML = `
         <span>${cardSnapshot.isPaid ? "Paid ✓" : "Due " + formatCurrency(cardSnapshot.billDue)}</span>
-        <span>This cycle ${formatCurrency(cardSnapshot.thisCycleSpend)}</span>
+        <span>${formatDate(toLocalDateString(cardSnapshot.periodStart))} – ${formatDate(toLocalDateString(cardSnapshot.statementClose))}</span>
       `;
     } else {
       const meta = WALLET_META[account.id] || { badge: "", badgeClass: "", tag: "" };
@@ -1186,69 +1186,61 @@ function renderWallets() {
 
   if (ccBillDue) {
     const snapshot = calculateCreditCardBillSnapshot(balances.creditCard);
-    const period = `${formatDate(toLocalDateString(snapshot.statementStart))} – ${formatDate(toLocalDateString(snapshot.statementEnd))}`;
+    const period = `${formatDate(toLocalDateString(snapshot.periodStart))} – ${formatDate(toLocalDateString(snapshot.statementClose))}`;
     if (ccBillPeriod) ccBillPeriod.textContent = `(${period})`;
-    ccBillDue.textContent = formatCurrency(snapshot.statementTotal);
-    const status = snapshot.isPaid ? "Paid ✓" : (snapshot.statementTotal > 0 ? "Due now" : "Nothing due");
-    ccBillMeta.textContent = `${status} · this cycle so far ${formatCurrency(snapshot.thisCycleSpend)} · resets on the 15th`;
+    ccBillDue.textContent = formatCurrency(snapshot.billTotal);
+    const status = snapshot.isPaid ? "Paid ✓" : (snapshot.billTotal > 0 ? "Due now" : "Nothing due");
+    ccBillMeta.textContent = `${status} · bills on the 15th`;
     if (resetCreditCardBillButton) resetCreditCardBillButton.disabled = snapshot.billDue <= 0;
   }
 }
 
-// The most recent bill-day (15th) that has occurred, inclusive of today.
-function mostRecentStatement15th(referenceDate = new Date()) {
+// The statement close date (15th) of the CURRENT billing cycle. It's this
+// month's 15th until the 15th passes, then next month's — so on the 15th the
+// current month's spending is still the current bill (not a past cycle).
+function creditCardStatementClose(referenceDate = new Date()) {
   const dt = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), CREDIT_CARD_BILL_DAY);
-  if (referenceDate.getDate() < CREDIT_CARD_BILL_DAY) {
-    dt.setMonth(dt.getMonth() - 1);
+  if (referenceDate.getDate() > CREDIT_CARD_BILL_DAY) {
+    dt.setMonth(dt.getMonth() + 1);
   }
-  return dt.toLocaleDateString("en-CA");
+  return dt;
 }
 
 function calculateCreditCardBillSnapshot(totalOwed) {
-  // The bill cycle rolls automatically on the 15th: the most recent 15th closes
-  // the previous cycle into a statement, and a new cycle starts accruing.
-  const currentStatement = parseLocalDate(mostRecentStatement15th());
-  const previousStatement = new Date(currentStatement);
-  previousStatement.setMonth(previousStatement.getMonth() - 1);
-
-  // Statement window is the closed cycle, e.g. 16 Aug – 14 Sept for a 15 Sept close.
-  const statementStart = new Date(previousStatement);
-  statementStart.setDate(statementStart.getDate() + 1);
-  const statementEnd = new Date(currentStatement);
-  statementEnd.setDate(statementEnd.getDate() - 1);
+  // Current statement cycle, e.g. 16 Aug – 15 Sept (closes and bills on the 15th).
+  const statementClose = creditCardStatementClose();
+  const statementOpen = new Date(statementClose);
+  statementOpen.setMonth(statementOpen.getMonth() - 1);
+  const periodStart = new Date(statementOpen);
+  periodStart.setDate(periodStart.getDate() + 1);
 
   const paidThrough = parseLocalDate(state.settings.creditCardBillPaidThrough || "1970-01-01");
-  const isPaid = paidThrough >= currentStatement;
+  const isPaid = paidThrough >= statementClose;
 
   const creditCardExpenses = state.transactions
     .filter((t) => t.type === "expense" && t.account === "creditCard");
 
-  // Total spent in the last closed statement cycle (always shown).
-  const statementTotal = creditCardExpenses
+  // Total spent in the current statement cycle — this is the bill.
+  const billTotal = creditCardExpenses
     .filter((t) => {
       const d = parseLocalDate(t.date);
-      return d > previousStatement && d < currentStatement;
+      return d > statementOpen && d <= statementClose;
     })
     .reduce((sum, t) => sum + t.amount, 0);
 
-  // Spend accruing toward the next statement (since the current 15th).
-  const thisCycleSpend = creditCardExpenses
-    .filter((t) => parseLocalDate(t.date) >= currentStatement)
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const billDue = isPaid ? 0 : statementTotal;
+  const billDue = isPaid ? 0 : billTotal;
 
   return {
-    statementTotal,
-    thisCycleSpend,
-    currentCycleSpend: thisCycleSpend,
+    billTotal,
     billDue,
     isPaid,
     totalOwed,
-    currentStatement,
-    previousStatement,
-    statementStart,
-    statementEnd
+    statementClose,
+    statementOpen,
+    periodStart,
+    // aliases for any remaining references
+    statementTotal: billTotal,
+    currentCycleSpend: billTotal
   };
 }
 
@@ -1256,14 +1248,14 @@ function handleResetCreditCardBill() {
   const balances = calculateBalances();
   const snapshot = calculateCreditCardBillSnapshot(balances.creditCard);
   if (snapshot.billDue <= 0) {
-    showToast(snapshot.statementTotal > 0 ? "This statement is already marked paid." : "No statement due right now.", "info");
+    showToast(snapshot.billTotal > 0 ? "This bill is already marked paid." : "No credit card bill due right now.", "info");
     return;
   }
-  const period = `${formatDate(toLocalDateString(snapshot.statementStart))} – ${formatDate(toLocalDateString(snapshot.statementEnd))}`;
-  const confirmed = confirm(`Mark the credit card bill of ${formatCurrency(snapshot.billDue)} (${period}) as paid? The statement total stays visible, but the amount due resets to ${formatCurrency(0)}.`);
+  const period = `${formatDate(toLocalDateString(snapshot.periodStart))} – ${formatDate(toLocalDateString(snapshot.statementClose))}`;
+  const confirmed = confirm(`Mark the credit card bill of ${formatCurrency(snapshot.billDue)} (${period}) as paid? The bill total stays visible, but the amount due resets to ${formatCurrency(0)}.`);
   if (!confirmed) return;
 
-  state.settings.creditCardBillPaidThrough = toLocalDateString(snapshot.currentStatement);
+  state.settings.creditCardBillPaidThrough = toLocalDateString(snapshot.statementClose);
   saveState();
   render();
   showToast("Credit card bill marked as paid", "success");
