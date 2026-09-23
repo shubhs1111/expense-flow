@@ -959,7 +959,31 @@ button, input, select, textarea { font: inherit; }
 .ledger-actions .secondary-button { display: inline-flex; align-items: center; gap: 7px; }
 .ledger-count { margin: 0 0 12px; color: var(--muted); font-size: 0.82rem; font-weight: 600; }
 
-.search-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.search-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.filter-dates { margin-top: -6px; }
+.date-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.date-filter input {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  padding: 9px 12px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.date-filter input:focus { outline: 2px solid var(--brand-soft); border-color: var(--brand); }
+.filter-dates .secondary-button { padding: 9px 16px; font-size: 0.82rem; }
 .search-bar input {
   flex: 1;
   min-width: 180px;

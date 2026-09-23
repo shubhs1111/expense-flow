@@ -141,6 +141,10 @@ const toastContainer = document.getElementById("toastContainer");
 const historySearch = document.getElementById("historySearch");
 const historyFilterCategory = document.getElementById("historyFilterCategory");
 const historyFilterType = document.getElementById("historyFilterType");
+const historyFilterAccount = document.getElementById("historyFilterAccount");
+const historyFilterFrom = document.getElementById("historyFilterFrom");
+const historyFilterTo = document.getElementById("historyFilterTo");
+const historyClearFilters = document.getElementById("historyClearFilters");
 const exportDataButton = document.getElementById("exportDataButton");
 const importDataButton = document.getElementById("importDataButton");
 const importFileInput = document.getElementById("importFileInput");
@@ -327,6 +331,10 @@ function bootstrap() {
   historySearch.addEventListener("input", renderFilteredHistory);
   historyFilterCategory.addEventListener("change", renderFilteredHistory);
   historyFilterType.addEventListener("change", renderFilteredHistory);
+  if (historyFilterAccount) historyFilterAccount.addEventListener("change", renderFilteredHistory);
+  if (historyFilterFrom) historyFilterFrom.addEventListener("change", renderFilteredHistory);
+  if (historyFilterTo) historyFilterTo.addEventListener("change", renderFilteredHistory);
+  if (historyClearFilters) historyClearFilters.addEventListener("click", clearHistoryFilters);
   exportDataButton.addEventListener("click", handleExportData);
   importDataButton.addEventListener("click", () => importFileInput.click());
   importFileInput.addEventListener("change", handleImportData);
@@ -1902,6 +1910,9 @@ function renderFilteredHistory() {
   const query = historySearch.value.toLowerCase().trim();
   const categoryFilter = historyFilterCategory.value;
   const typeFilter = historyFilterType.value;
+  const accountFilter = historyFilterAccount ? historyFilterAccount.value : "";
+  const fromDate = historyFilterFrom ? historyFilterFrom.value : "";
+  const toDate = historyFilterTo ? historyFilterTo.value : "";
 
   let filtered = getSortedTransactions();
 
@@ -1921,8 +1932,34 @@ function renderFilteredHistory() {
     filtered = filtered.filter((t) => t.type === typeFilter);
   }
 
+  if (accountFilter) {
+    filtered = filtered.filter((t) =>
+      t.account === accountFilter ||
+      t.fromAccount === accountFilter ||
+      t.toAccount === accountFilter
+    );
+  }
+
+  if (fromDate) {
+    filtered = filtered.filter((t) => t.date >= fromDate);
+  }
+
+  if (toDate) {
+    filtered = filtered.filter((t) => t.date <= toDate);
+  }
+
   historyList.innerHTML = renderTransactionRows(filtered);
   historyCount.textContent = `${filtered.length} of ${state.transactions.length} transactions`;
+}
+
+function clearHistoryFilters() {
+  historySearch.value = "";
+  historyFilterCategory.value = "";
+  historyFilterType.value = "";
+  if (historyFilterAccount) historyFilterAccount.value = "";
+  if (historyFilterFrom) historyFilterFrom.value = "";
+  if (historyFilterTo) historyFilterTo.value = "";
+  renderFilteredHistory();
 }
 
 function handleExportData() {

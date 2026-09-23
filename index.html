@@ -407,6 +407,18 @@
               <option value="income">Income</option>
               <option value="transfer">Transfer</option>
             </select>
+            <select id="historyFilterAccount" aria-label="Filter by source account">
+              <option value="">All accounts</option>
+              <option value="current">Current Account</option>
+              <option value="savings">Savings Account</option>
+              <option value="investments">Investments</option>
+              <option value="creditCard">Credit Card</option>
+            </select>
+          </div>
+          <div class="search-bar filter-dates">
+            <label class="date-filter">From <input id="historyFilterFrom" type="date" aria-label="From date"></label>
+            <label class="date-filter">To <input id="historyFilterTo" type="date" aria-label="To date"></label>
+            <button id="historyClearFilters" type="button" class="secondary-button">Clear filters</button>
           </div>
           <p id="historyCount" class="ledger-count">All saved transactions appear here.</p>
           <div id="historyList" class="ledger-wrap"></div>
