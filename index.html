@@ -330,12 +330,18 @@
           <div class="card category-card">
             <div class="section-heading">
               <div class="section-heading-main">
-                <h2>Category Breakdown</h2>
+                <h2>Spending Breakdown</h2>
                 <p class="section-sub">Where your money flowed this period</p>
               </div>
-              <div class="breakdown-period-tabs">
-                <button class="breakdown-tab is-active" data-breakdown="month">Month</button>
-                <button class="breakdown-tab" data-breakdown="week">Week</button>
+              <div class="breakdown-controls">
+                <div class="breakdown-group-tabs">
+                  <button class="group-tab is-active" data-group="category">Category</button>
+                  <button class="group-tab" data-group="account">Account</button>
+                </div>
+                <div class="breakdown-period-tabs">
+                  <button class="breakdown-tab is-active" data-breakdown="month">Month</button>
+                  <button class="breakdown-tab" data-breakdown="week">Week</button>
+                </div>
               </div>
             </div>
             <div id="categoryBreakdownTotal" class="breakdown-total"></div>
@@ -350,6 +356,10 @@
                 <h2>Week over week</h2>
                 <p class="section-sub">This week vs last week</p>
               </div>
+              <div class="breakdown-group-tabs">
+                <button class="group-tab is-active" data-group="category">Category</button>
+                <button class="group-tab" data-group="account">Account</button>
+              </div>
             </div>
             <div id="wowSummary" class="wow-summary"></div>
             <div id="wowTable" class="comparison-table"></div>
@@ -360,6 +370,10 @@
               <div class="section-heading-main">
                 <h2>Month over month</h2>
                 <p class="section-sub">This month vs last month</p>
+              </div>
+              <div class="breakdown-group-tabs">
+                <button class="group-tab is-active" data-group="category">Category</button>
+                <button class="group-tab" data-group="account">Account</button>
               </div>
             </div>
             <div id="momSummary" class="wow-summary"></div>

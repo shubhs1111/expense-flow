@@ -71,6 +71,7 @@ const defaultState = {
 let state = structuredClone(defaultState);
 let currentRange = "daily";
 let breakdownPeriod = "month";
+let analyticsGroup = "category";
 let editingTransactionId = null;
 let currentPage = "home";
 let currentUser = null;
@@ -363,6 +364,16 @@ function bootstrap() {
       document.querySelectorAll(".breakdown-tab").forEach((tab) => tab.classList.remove("is-active"));
       button.classList.add("is-active");
       renderCategoryBreakdown();
+    });
+  });
+
+  document.querySelectorAll(".group-tab").forEach((button) => {
+    button.addEventListener("click", () => {
+      analyticsGroup = button.dataset.group;
+      document.querySelectorAll(".group-tab").forEach((tab) => tab.classList.toggle("is-active", tab.dataset.group === analyticsGroup));
+      renderCategoryBreakdown();
+      renderWoW();
+      renderMoM();
     });
   });
 
@@ -765,39 +776,33 @@ function renderQuickStats() {
 }
 
 function renderCategoryBreakdown() {
+  const group = analyticsGroup;
   const period = breakdownPeriod === "month"
     ? getComparisonPeriod("monthly", 0)
     : getComparisonPeriod("weekly", 0);
-  const totals = categoryTotalsForWindow(period.start, period.end);
+  const totals = groupTotalsForWindow(period.start, period.end, group);
   const total = sumCategoryTotals(totals);
   const sorted = [...totals.entries()].sort((a, b) => b[1] - a[1]);
-  const max = sorted.length ? sorted[0][1] : 1;
 
   categoryBreakdownTotal.innerHTML = total
     ? `<span class="breakdown-total-amount">${formatCurrency(total)}</span><span class="breakdown-total-label">total ${breakdownPeriod === "month" ? "this month" : "this week"}</span>`
     : `<span class="breakdown-total-label">No spending recorded ${breakdownPeriod === "month" ? "this month" : "this week"}</span>`;
 
   if (!sorted.length) {
-    categoryBreakdown.innerHTML = `<div class="empty-state">Add expenses to see your category breakdown.</div>`;
+    categoryBreakdown.innerHTML = `<div class="empty-state">Add expenses to see your spending breakdown.</div>`;
     return;
   }
 
   const colors = ["#0f9d76", "#8b5cf6", "#12b6cf", "#f5a623", "#f4526b", "#3b82f6", "#14b8a6", "#f97316", "#ec4899", "#84cc16", "#a855f7", "#06b6d4", "#78716c"];
 
-  let acc = 0;
-  const stops = sorted.map(([, amount], i) => {
-    const start = (acc / total) * 360;
-    acc += amount;
-    const end = (acc / total) * 360;
-    return `${colors[i % colors.length]} ${start}deg ${end}deg`;
-  }).join(", ");
-
-  const [topCategory, topAmount] = sorted[0];
+  const [topKey, topAmount] = sorted[0];
   const topPercent = Math.round((topAmount / total) * 100);
+  const topLabel = groupDisplay(topKey, group).label;
 
   // Build SVG donut segments (r chosen so circumference ≈ 100 => percents map to dash lengths)
   let cumulative = 0;
-  const segments = sorted.map(([category, amount], i) => {
+  const segments = sorted.map(([key, amount], i) => {
+    const disp = groupDisplay(key, group);
     const pct = (amount / total) * 100;
     const dash = `${pct} ${100 - pct}`;
     const offset = 25 - cumulative; // start at 12 o'clock, go clockwise
@@ -805,16 +810,17 @@ function renderCategoryBreakdown() {
     return `<circle class="donut-seg" cx="21" cy="21" r="15.915" fill="none"
       stroke="${colors[i % colors.length]}" stroke-width="5.5"
       stroke-dasharray="${dash}" stroke-dashoffset="${offset}"
-      data-cat="${escapeHtml(category)}" data-amt="${formatCurrency(amount)}" data-pct="${Math.round(pct)}"
-      data-index="${i}"><title>${escapeHtml(category)} — ${formatCurrency(amount)} (${Math.round(pct)}%)</title></circle>`;
+      data-key="${escapeHtml(key)}" data-label="${escapeHtml(disp.label)}" data-amt="${formatCurrency(amount)}" data-pct="${Math.round(pct)}"
+      data-index="${i}"><title>${escapeHtml(disp.label)} — ${formatCurrency(amount)} (${Math.round(pct)}%)</title></circle>`;
   }).join("");
 
-  const legend = sorted.map(([category, amount], i) => {
+  const legend = sorted.map(([key, amount], i) => {
+    const disp = groupDisplay(key, group);
     const pct = Math.round((amount / total) * 100);
     return `
       <div class="legend-row" data-index="${i}">
         <span class="legend-swatch" style="background:${colors[i % colors.length]}"></span>
-        <span class="legend-name">${CATEGORY_EMOJI[category] || ""} ${escapeHtml(category)}</span>
+        <span class="legend-name">${disp.emoji} ${escapeHtml(disp.label)}</span>
         <span class="legend-amount">${formatCurrency(amount)}</span>
         <span class="legend-pct">${pct}%</span>
       </div>
@@ -824,24 +830,24 @@ function renderCategoryBreakdown() {
   categoryBreakdown.innerHTML = `
     <div class="donut-wrap">
       <div class="donut-chart">
-        <svg viewBox="0 0 42 42" class="donut-svg" role="img" aria-label="Category breakdown donut chart">
+        <svg viewBox="0 0 42 42" class="donut-svg" role="img" aria-label="Spending breakdown donut chart">
           <circle cx="21" cy="21" r="15.915" fill="none" stroke="var(--chip)" stroke-width="5.5"></circle>
           ${segments}
         </svg>
         <div class="donut-center">
           <strong>${topPercent}%</strong>
-          <span>${escapeHtml(topCategory)}</span>
+          <span>${escapeHtml(topLabel)}</span>
         </div>
       </div>
       <div class="donut-side">
         <div class="donut-legend">${legend}</div>
-        <p class="donut-hint">Click a slice or category to see its transactions</p>
+        <p class="donut-hint">Click a slice or ${group === "account" ? "account" : "category"} to see its transactions</p>
       </div>
     </div>
     <div class="category-detail is-hidden" id="categoryDetail"></div>
   `;
 
-  wireDonutInteraction(topPercent, topCategory, { period, colors });
+  wireDonutInteraction(topPercent, topLabel, { period, colors, group });
 }
 
 function wireDonutInteraction(defaultPct, defaultLabel, context) {
@@ -855,7 +861,7 @@ function wireDonutInteraction(defaultPct, defaultLabel, context) {
     legendRows.forEach((r) => r.classList.toggle("is-active", Number(r.dataset.index) === index));
     const seg = [...segs].find((s) => Number(s.dataset.index) === index);
     if (seg) {
-      center.innerHTML = `<strong>${seg.dataset.pct}%</strong><span>${escapeHtml(seg.dataset.cat)}</span><em>${escapeHtml(seg.dataset.amt)}</em>`;
+      center.innerHTML = `<strong>${seg.dataset.pct}%</strong><span>${escapeHtml(seg.dataset.label)}</span><em>${escapeHtml(seg.dataset.amt)}</em>`;
     }
   };
 
@@ -866,10 +872,9 @@ function wireDonutInteraction(defaultPct, defaultLabel, context) {
   };
 
   const drill = (index) => {
-    const seg = [...segs].find((s) => Number(s.dataset.index) === index)
-      || [...legendRows].find((r) => Number(r.dataset.index) === index);
+    const seg = [...segs].find((s) => Number(s.dataset.index) === index);
     if (!seg) return;
-    showCategoryDetail(seg.dataset.cat, context.colors[index % context.colors.length], context.period);
+    showCategoryDetail(seg.dataset.key, context.colors[index % context.colors.length], context.period, context.group);
   };
 
   segs.forEach((seg) => {
@@ -884,14 +889,15 @@ function wireDonutInteraction(defaultPct, defaultLabel, context) {
   });
 }
 
-function showCategoryDetail(category, color, period) {
+function showCategoryDetail(key, color, period, group = "category") {
   const detail = document.getElementById("categoryDetail");
   const wrap = categoryBreakdown.querySelector(".donut-wrap");
   if (!detail || !wrap) return;
 
+  const label = groupDisplay(key, group).label;
   const txns = state.transactions
     .filter(isSpendingEntry)
-    .filter((t) => t.category === category)
+    .filter((t) => group === "account" ? spendingAccountKey(t) === key : t.category === key)
     .filter((t) => {
       const dt = parseLocalDate(t.date);
       return dt >= period.start && dt <= period.end;
@@ -915,7 +921,7 @@ function showCategoryDetail(category, color, period) {
             <div class="cd-amount">${formatCurrency(t.amount)}</div>
           </div>`;
       }).join("")
-    : `<div class="empty-state">No transactions in this category for this period.</div>`;
+    : `<div class="empty-state">No transactions for this period.</div>`;
 
   detail.innerHTML = `
     <div class="cd-head">
@@ -925,7 +931,7 @@ function showCategoryDetail(category, color, period) {
       </button>
       <div class="cd-head-main">
         <span class="cd-dot" style="background:${color}"></span>
-        <strong>${escapeHtml(category)}</strong>
+        <strong>${escapeHtml(label)}</strong>
         <span class="cd-count">${txns.length} txn${txns.length === 1 ? "" : "s"}</span>
       </div>
       <span class="cd-total">${formatCurrency(total)}</span>
@@ -942,11 +948,11 @@ function showCategoryDetail(category, color, period) {
   detail.classList.remove("is-hidden");
 }
 
-function renderComparisonPanel(range, summaryEl, tableEl) {
+function renderComparisonPanel(range, summaryEl, tableEl, group = "category") {
   const currentPeriod = getComparisonPeriod(range, 0);
   const previousPeriod = getComparisonPeriod(range, 1);
-  const currentTotals = categoryTotalsForWindow(currentPeriod.start, currentPeriod.end);
-  const previousTotals = categoryTotalsForWindow(previousPeriod.start, previousPeriod.end);
+  const currentTotals = groupTotalsForWindow(currentPeriod.start, currentPeriod.end, group);
+  const previousTotals = groupTotalsForWindow(previousPeriod.start, previousPeriod.end, group);
   const currentTotal = sumCategoryTotals(currentTotals);
   const previousTotal = sumCategoryTotals(previousTotals);
   const delta = currentTotal - previousTotal;
@@ -969,34 +975,35 @@ function renderComparisonPanel(range, summaryEl, tableEl) {
     </article>
   `;
 
-  const categories = [...new Set([...currentTotals.keys(), ...previousTotals.keys()])]
+  const keys = [...new Set([...currentTotals.keys(), ...previousTotals.keys()])]
     .sort((a, b) => (currentTotals.get(b) || 0) - (currentTotals.get(a) || 0));
 
-  if (!categories.length) {
+  if (!keys.length) {
     tableEl.innerHTML = `<div class="empty-state">Add expenses to compare periods.</div>`;
     return;
   }
 
-  const header = `<div class="ct-header"><div>Category</div><div style="text-align:right">Current</div><div style="text-align:right">Previous</div><div style="text-align:right">Change</div></div>`;
-  const rows = categories.map((category) => {
-    const curr = currentTotals.get(category) || 0;
-    const prev = previousTotals.get(category) || 0;
+  const header = `<div class="ct-header"><div>${group === "account" ? "Account" : "Category"}</div><div style="text-align:right">Current</div><div style="text-align:right">Previous</div><div style="text-align:right">Change</div></div>`;
+  const rows = keys.map((key) => {
+    const disp = groupDisplay(key, group);
+    const curr = currentTotals.get(key) || 0;
+    const prev = previousTotals.get(key) || 0;
     const d = curr - prev;
     const dp = prev ? Math.round((d / prev) * 100) : curr ? null : 0;
     const dc = d > 0 ? "delta-up" : d < 0 ? "delta-down" : "delta-flat";
     const dl = dp === null ? "New" : dp === 0 ? "-" : `${dp > 0 ? "+" : ""}${dp}%`;
-    return `<div class="ct-row"><div class="ct-cell-name">${CATEGORY_EMOJI[category] || ""} ${escapeHtml(category)}</div><div class="ct-cell-amount">${formatCurrency(curr)}</div><div class="ct-cell-amount">${formatCurrency(prev)}</div><div class="ct-cell-delta ${dc}">${dl}</div></div>`;
+    return `<div class="ct-row"><div class="ct-cell-name">${disp.emoji} ${escapeHtml(disp.label)}</div><div class="ct-cell-amount">${formatCurrency(curr)}</div><div class="ct-cell-amount">${formatCurrency(prev)}</div><div class="ct-cell-delta ${dc}">${dl}</div></div>`;
   }).join("");
 
   tableEl.innerHTML = header + rows;
 }
 
 function renderWoW() {
-  renderComparisonPanel("weekly", wowSummary, wowTable);
+  renderComparisonPanel("weekly", wowSummary, wowTable, analyticsGroup);
 }
 
 function renderMoM() {
-  renderComparisonPanel("monthly", momSummary, momTable);
+  renderComparisonPanel("monthly", momSummary, momTable, analyticsGroup);
 }
 
 function renderTopExpenses() {
@@ -1272,7 +1279,23 @@ function getComparisonPeriod(range, offset) {
   };
 }
 
-function categoryTotalsForWindow(start, end) {
+const ACCOUNT_EMOJI = { current: "🏦", savings: "🐷", investments: "📈", creditCard: "💳" };
+
+// The source account a spending entry drew from.
+function spendingAccountKey(transaction) {
+  return transaction.type === "transfer" ? transaction.fromAccount : transaction.account;
+}
+
+// Display label + emoji for a breakdown key, by grouping dimension.
+function groupDisplay(key, group) {
+  if (group === "account") {
+    return { label: labelForAccount(key), emoji: ACCOUNT_EMOJI[key] || "💼" };
+  }
+  return { label: key, emoji: CATEGORY_EMOJI[key] || "" };
+}
+
+// Total spending in a window, grouped by category or source account.
+function groupTotalsForWindow(start, end, group) {
   const totals = new Map();
   state.transactions
     .filter(isSpendingEntry)
@@ -1280,8 +1303,16 @@ function categoryTotalsForWindow(start, end) {
       const transactionDate = parseLocalDate(item.date);
       return transactionDate >= start && transactionDate <= end;
     })
-    .forEach((item) => totals.set(item.category, (totals.get(item.category) || 0) + item.amount));
+    .forEach((item) => {
+      const key = group === "account" ? spendingAccountKey(item) : item.category;
+      if (!key) return;
+      totals.set(key, (totals.get(key) || 0) + item.amount);
+    });
   return totals;
+}
+
+function categoryTotalsForWindow(start, end) {
+  return groupTotalsForWindow(start, end, "category");
 }
 
 function sumCategoryTotals(totals) {
